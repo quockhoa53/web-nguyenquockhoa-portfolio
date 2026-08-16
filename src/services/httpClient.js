@@ -2,7 +2,18 @@ const defaultApiUrl = `${window.location.protocol}//${window.location.hostname}:
 const API_URL = (import.meta.env.VITE_API_URL || defaultApiUrl).replace(/\/$/, '')
 
 export async function request(path, options = {}) {
-  const response = await fetch(`${API_URL}${path}`, { credentials: 'include', ...options })
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('portfolio_admin_token') : null
+  const headers = { ...options.headers }
+  if (token) {
+    headers['X-Admin-Token'] = token
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    credentials: 'include',
+    ...options,
+    headers,
+  })
 
   // Read response as text first to safely handle empty HTTP response bodies (e.g. 204 or void actions)
   const text = await response.text()

@@ -2,10 +2,25 @@ import { request } from './httpClient'
 
 const json = (method, data) => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
 
-export const adminLogin = (data) => request('/admin/auth/login', json('POST', data))
+export const adminLogin = async (data) => {
+  const result = await request('/admin/auth/login', json('POST', data))
+  if (result && result.token) {
+    localStorage.setItem('portfolio_admin_token', result.token)
+  }
+  return result
+}
+
 export const checkAdminAccess = () => request('/admin/auth/access-check')
 export const adminMe = () => request('/admin/auth/me')
-export const adminLogout = () => request('/admin/auth/logout', { method: 'POST' })
+
+export const adminLogout = async () => {
+  try {
+    await request('/admin/auth/logout', { method: 'POST' })
+  } finally {
+    localStorage.removeItem('portfolio_admin_token')
+  }
+}
+
 export const getDashboard = () => request('/admin/dashboard')
 export const getAdminArticles = () => request('/admin/knowledge/articles')
 export const getAdminWorkItems = () => request('/admin/work-items')
