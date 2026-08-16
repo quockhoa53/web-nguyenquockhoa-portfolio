@@ -130,7 +130,7 @@ export function AdminContentPage() {
   }
 
   return (
-    <>
+    <div className="admin-page">
       <div className="admin-heading">
         <div>
           <span>CONTENT MANAGEMENT</span>
@@ -299,6 +299,6 @@ export function AdminContentPage() {
           </form>
         </div>
       )}
-    </>
+    </div>
   )
 }
