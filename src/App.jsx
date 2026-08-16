@@ -14,6 +14,7 @@ const AdminLayout = lazy(() => import('./admin/AdminLayout').then(module => ({ d
 const AdminLoginPage = lazy(() => import('./admin/AdminLoginPage').then(module => ({ default: module.AdminLoginPage })))
 const AdminDashboardPage = lazy(() => import('./admin/AdminDashboardPage').then(module => ({ default: module.AdminDashboardPage })))
 const AdminContentPage = lazy(() => import('./admin/AdminContentPage').then(module => ({ default: module.AdminContentPage })))
+const AdminUsersPage = lazy(() => import('./admin/AdminUsersPage').then(module => ({ default: module.AdminUsersPage })))
 
 import { ToastProvider } from './components/common/ToastContext'
 
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="admin/login" element={<AdminLoginPage />} />
         <Route path="admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
           <Route path=":section" element={<AdminContentPage />} />
         </Route>
         <Route element={<SiteLayout />}>

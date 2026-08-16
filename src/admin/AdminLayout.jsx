@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, BookOpen, BriefcaseBusiness, ExternalLink, FolderKanban, Heart, LogOut, Mail, MessageSquare, Route, Sparkles, UserRound, Users } from 'lucide-react'
+import { BarChart3, BookOpen, BriefcaseBusiness, ExternalLink, FolderKanban, Heart, LogOut, Mail, MessageSquare, Route, ShieldCheck, Sparkles, UserRound, Users } from 'lucide-react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { adminLogout, adminMe, checkAdminAccess } from '../services/adminApi'
 import { AdminAccessDenied } from './AdminAccessDenied'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 
 const links = [
-  ['', 'Dashboard', BarChart3], ['profile', 'Profile', UserRound], ['skills', 'Năng lực kỹ thuật', BriefcaseBusiness],
-  ['experiences', 'Kinh nghiệm', Route], ['projects', 'Dự án', FolderKanban],
-  ['categories', 'Danh mục', BookOpen], ['articles', 'Kiến thức', BookOpen],
-  ['work-items', 'Quá trình làm việc', Route], ['comments', 'Bình luận', MessageSquare],
-  ['likes', 'Lượt yêu thích', Heart], ['contacts', 'Liên hệ', Mail], ['guests', 'Khách truy cập', Users],
+  ['', 'Dashboard', BarChart3],
+  ['users', 'Tài khoản & IP', ShieldCheck],
+  ['profile', 'Profile', UserRound],
+  ['skills', 'Năng lực kỹ thuật', BriefcaseBusiness],
+  ['experiences', 'Kinh nghiệm', Route],
+  ['projects', 'Dự án', FolderKanban],
+  ['categories', 'Danh mục', BookOpen],
+  ['articles', 'Kiến thức', BookOpen],
+  ['work-items', 'Quá trình làm việc', Route],
+  ['comments', 'Bình luận', MessageSquare],
+  ['likes', 'Lượt yêu thích', Heart],
+  ['contacts', 'Liên hệ', Mail],
+  ['guests', 'Khách truy cập', Users],
 ]
 
 export function AdminLayout() {
@@ -58,25 +66,29 @@ export function AdminLayout() {
 
         <div className="admin-account">
           <div className="admin-avatar">{admin.displayName?.charAt(0)?.toUpperCase() || 'A'}</div>
-          <div><b>{admin.displayName}</b><small>Administrator</small></div>
-          <button aria-label="Đăng xuất" onClick={logout}><LogOut /></button>
+          <div><b>{admin.displayName}</b><small>@{admin.username}</small></div>
+          <button onClick={logout} title="Đăng xuất"><LogOut /></button>
         </div>
       </aside>
 
-      <section className="admin-main">
+      <div className="admin-main">
         <header className="admin-topbar">
-          <div className="admin-welcome">
-            <span><Sparkles /> ADMIN PORTAL</span>
-            <b>Quản trị nội dung</b>
+          <div>
+            <span className="admin-topbar-tag">Admin Mode</span>
+            <b>Trang quản trị danh mục &amp; nội dung</b>
           </div>
-          <a href="/" target="_blank" rel="noreferrer">Xem website <ExternalLink /></a>
+          <div className="admin-topbar-actions">
+            <span className="admin-topbar-ip">IP: {access.ip}</span>
+            <a href="/" target="_blank" rel="noreferrer"><ExternalLink /><span>Xem trang chủ</span></a>
+          </div>
         </header>
-        <div className="admin-page">
+
+        <section className="admin-workspace">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   )
 }
