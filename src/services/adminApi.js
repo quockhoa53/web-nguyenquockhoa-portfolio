@@ -34,11 +34,13 @@ export const updateAdminItem = (resource, id, data) => request(`/admin/${resourc
 export const deleteAdminItem = (resource, id) => request(`/admin/${resource}/${id}`, { method: 'DELETE' })
 export const moderateComment = (type, id, status) => request(`/admin/comments/${type}/${id}`, json('PATCH', { status }))
 
-// Admin Users & IP Whitelist Management
+// Admin Users Management
 export const getAdminUsers = () => request('/admin/users')
 export const createAdminUser = (data) => request('/admin/users', json('POST', data))
 export const updateAdminUser = (id, data) => request(`/admin/users/${id}`, json('PUT', data))
 export const deleteAdminUser = (id) => request(`/admin/users/${id}`, { method: 'DELETE' })
-export const getAdminUserIps = (id) => request(`/admin/users/${id}/ips`)
-export const addAdminUserIp = (id, data) => request(`/admin/users/${id}/ips`, json('POST', data))
-export const deleteAdminUserIp = (adminId, ipId) => request(`/admin/users/${adminId}/ips/${ipId}`, { method: 'DELETE' })
+
+// Global Allowed IPs Whitelist
+export const getAllowedIps = () => request('/admin/allowed-ips')
+export const createAllowedIp = (data) => request('/admin/allowed-ips', json('POST', data))
+export const deleteAllowedIp = (id) => request(`/admin/allowed-ips/${id}`, { method: 'DELETE' })
