@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, Briefcase, Calendar, CheckCircle2, ChevronRight,
 import { Link, useParams } from 'react-router-dom'
 import { PageHero } from '../components/common/PageHero'
 import { LinesSkeleton } from '../components/common/Skeletons'
+import { TiltCard } from '../components/common/TiltCard'
 import { useApiResource } from '../hooks/useApiResource'
 import { getWorkItem, getWorkItems } from '../services/portfolioApi'
 
@@ -54,7 +55,7 @@ export function WorkProcessPage() {
                     </div>
 
                     {/* Work Content Card */}
-                    <div className="work-timeline-card">
+                    <TiltCard className="work-timeline-card">
                       <div className="work-card-header">
                         <div className="meta-pill-group">
                           <span className="meta-pill period">
@@ -101,7 +102,7 @@ export function WorkProcessPage() {
                           <ArrowRight className="btn-arrow" />
                         </Link>
                       </div>
-                    </div>
+                    </TiltCard>
                   </article>
                 )
               })}

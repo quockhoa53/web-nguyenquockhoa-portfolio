@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, BriefcaseBusiness, House, Mail, Menu, Moon, Phone, Route, Sun, X } from 'lucide-react'
+import { BookOpen, BriefcaseBusiness, House, Mail, Menu, Moon, Phone, Route, Sun, X, Sparkles } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useApiResource } from '../../hooks/useApiResource'
 import { getProfile } from '../../services/portfolioApi'
@@ -14,7 +14,7 @@ const links = [
 
 export function Header() {
   const [open, setOpen] = useState(false)
-  const [dark, setDark] = useState(() => localStorage.getItem('portfolio-theme') === 'dark')
+  const [dark, setDark] = useState(() => localStorage.getItem('portfolio-theme') !== 'light')
   const profileState = useApiResource(getProfile)
 
   const phone = profileState.data?.phone || '0969 895 549'
@@ -32,36 +32,36 @@ export function Header() {
           <span className="brand-mark">&lt;/&gt;</span>
           <span>
             <b>NQK</b>
-            <small>Backend Portfolio</small>
+            <small>Backend &amp; AI Systems</small>
           </span>
         </NavLink>
 
         <nav className="desktop-nav">
           {links.map(([to, label, Icon]) => (
             <NavLink key={to} to={to} end={to === '/'}>
-              <Icon size={16} />
-              {label}
+              <Icon size={15} />
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
 
         <div className="nav-actions">
           <a className="quick-call" href={`tel:${phoneHref}`}>
-            <Phone size={16} /> Gọi ngay
+            <Phone size={15} /> <span>Gọi ngay</span>
           </a>
           <button
             className="icon-btn"
             onClick={() => setDark(!dark)}
             aria-label="Đổi giao diện sáng tối"
           >
-            {dark ? <Sun /> : <Moon />}
+            {dark ? <Sun size={17} /> : <Moon size={17} />}
           </button>
           <button
             className="icon-btn mobile-toggle"
             onClick={() => setOpen(!open)}
             aria-label="Mở menu"
           >
-            {open ? <X /> : <Menu />}
+            {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function Header() {
           {links.map(([to, label, Icon]) => (
             <NavLink key={to} to={to} end={to === '/'} onClick={() => setOpen(false)}>
               <Icon size={18} />
-              {label}
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>

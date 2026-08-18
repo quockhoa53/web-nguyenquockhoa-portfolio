@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PageHero } from '../components/common/PageHero'
 import { CardsSkeleton, LinesSkeleton } from '../components/common/Skeletons'
+import { TiltCard } from '../components/common/TiltCard'
 import { EngagementPanel } from '../features/engagement/EngagementPanel'
 import { useApiResource } from '../hooks/useApiResource'
 import { getKnowledgeArticle, getKnowledgeArticles, getKnowledgeCategories } from '../services/portfolioApi'
@@ -62,7 +63,7 @@ export function KnowledgePage() {
           ) : (
             <div className="knowledge-grid-container">
               {filteredArticles.map((art) => (
-                <article key={art.id} className="modern-knowledge-card reveal">
+                <TiltCard key={art.id} className="modern-knowledge-card reveal">
                   <div className="knowledge-card-top">
                     <span className="category-pill">
                       <Tag style={{ width: 12, height: 12 }} />
@@ -97,7 +98,7 @@ export function KnowledgePage() {
                       <ArrowRight style={{ width: 14, height: 14 }} />
                     </Link>
                   </div>
-                </article>
+                </TiltCard>
               ))}
             </div>
           )}

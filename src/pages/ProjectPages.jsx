@@ -1,8 +1,24 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, Code2, Code2 as GithubIcon, ExternalLink, Eye, FolderKanban, Heart, Layers, MessageSquare, Sparkles, Star } from 'lucide-react'
-import { useState } from 'react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Code2,
+  Code2 as GithubIcon,
+  ExternalLink,
+  Eye,
+  FolderKanban,
+  Heart,
+  Layers,
+  List,
+  MessageSquare,
+  Sparkles,
+  Star,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PageHero } from '../components/common/PageHero'
 import { CardsSkeleton, LinesSkeleton } from '../components/common/Skeletons'
+import { TiltCard } from '../components/common/TiltCard'
 import { useApiResource } from '../hooks/useApiResource'
 import { getProject, getProjects } from '../services/portfolioApi'
 
@@ -10,6 +26,74 @@ function parseTechnologies(tech) {
   if (Array.isArray(tech)) return tech.map(t => String(t).trim()).filter(Boolean)
   if (typeof tech === 'string') return tech.split(',').map(t => t.trim()).filter(Boolean)
   return []
+}
+
+function extractCleanSummary(html = '', rawSummary = '') {
+  if (rawSummary && rawSummary.trim()) {
+    return rawSummary.trim()
+  }
+  const text = (html || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim()
+  if (text.length <= 180) return text
+  const periodIndex = text.indexOf('.', 80)
+  if (periodIndex !== -1 && periodIndex <= 220) {
+    return text.slice(0, periodIndex + 1)
+  }
+  return text.slice(0, 180) + '...'
+}
+
+function processHtmlWithToc(htmlString = '') {
+  if (!htmlString) return { processedHtml: '', tocItems: [] }
+
+  try {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(htmlString, 'text/html')
+    const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6, strong')
+    const tocItems = []
+
+    let index = 1
+    headings.forEach(heading => {
+      const text = heading.textContent.trim()
+      if (!text || text.length < 3 || text.length > 85) return
+
+      const isHeadingTag = /^H[1-6]$/i.test(heading.tagName)
+      const isStandaloneStrong =
+        heading.tagName === 'STRONG' &&
+        heading.parentElement &&
+        heading.parentElement.textContent.trim() === text
+
+      if (isHeadingTag || isStandaloneStrong) {
+        const id = `toc-section-${index}`
+        heading.id = id
+        tocItems.push({
+          id,
+          text,
+          level: isHeadingTag ? parseInt(heading.tagName.replace('H', ''), 10) : 3,
+        })
+        index++
+      }
+    })
+
+    // If no standard headings found, attempt to match bullet lines or key points
+    if (tocItems.length === 0) {
+      const paragraphs = doc.querySelectorAll('p, div, li')
+      paragraphs.forEach(p => {
+        const text = p.textContent.trim()
+        if (/^(\d+[\.\)]|[🎯🚀⚡🛠️📌🔍💡])/.test(text) && text.length < 75) {
+          const id = `toc-section-${index}`
+          p.id = id
+          tocItems.push({ id, text, level: 3 })
+          index++
+        }
+      })
+    }
+
+    return {
+      processedHtml: doc.body.innerHTML,
+      tocItems,
+    }
+  } catch (err) {
+    return { processedHtml: htmlString, tocItems: [] }
+  }
 }
 
 export function ProjectsPage() {
@@ -58,13 +142,13 @@ export function ProjectsPage() {
               className={`filter-btn ${filter === 'BACKEND' ? 'active' : ''}`}
               onClick={() => setFilter('BACKEND')}
             >
-              Backend & Services
+              Backend &amp; Services
             </button>
             <button
               className={`filter-btn ${filter === 'DATA' ? 'active' : ''}`}
               onClick={() => setFilter('DATA')}
             >
-              Data & Pipeline
+              Data &amp; Pipeline
             </button>
           </div>
 
@@ -83,7 +167,7 @@ export function ProjectsPage() {
                 const isOdd = index % 2 !== 0
 
                 return (
-                  <article key={p.id} className="modern-project-card reveal">
+                  <TiltCard key={p.id} className="modern-project-card reveal">
                     {/* Card Cover with gradient & 3D look */}
                     <div className={`project-card-cover ${isOdd ? 'cover-alt' : ''}`}>
                       {p.imageUrl ? (
@@ -154,7 +238,7 @@ export function ProjectsPage() {
                         )}
                       </div>
                     </div>
-                  </article>
+                  </TiltCard>
                 )
               })}
             </div>
@@ -168,6 +252,29 @@ export function ProjectsPage() {
 export function ProjectDetailPage() {
   const { id } = useParams()
   const project = useApiResource(() => getProject(id), id)
+  const [activeTocId, setActiveTocId] = useState('')
+
+  const data = project.data
+  const techs = data ? parseTechnologies(data.technologies) : []
+
+  const cleanSummary = useMemo(() => {
+    if (!data) return ''
+    return extractCleanSummary(data.description, data.summary)
+  }, [data])
+
+  const { processedHtml, tocItems } = useMemo(() => {
+    if (!data || !data.description) return { processedHtml: '', tocItems: [] }
+    return processHtmlWithToc(data.description)
+  }, [data])
+
+  function handleScrollTo(e, targetId) {
+    e.preventDefault()
+    setActiveTocId(targetId)
+    const el = document.getElementById(targetId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   if (project.isLoading) {
     return (
@@ -179,7 +286,7 @@ export function ProjectDetailPage() {
     )
   }
 
-  if (project.error || !project.data) {
+  if (project.error || !data) {
     return (
       <main className="section">
         <div className="content-shell empty-state-box">
@@ -193,11 +300,8 @@ export function ProjectDetailPage() {
     )
   }
 
-  const data = project.data
-  const techs = parseTechnologies(data.technologies)
-
   return (
-    <main>
+    <main className="project-detail-page">
       {/* Project Detail Hero Banner */}
       <section className="detail-hero-banner tone-primary">
         <div className="hero-banner-mesh" />
@@ -206,7 +310,7 @@ export function ProjectDetailPage() {
         <div className="content-shell hero-banner-content">
           <div className="hero-top-nav">
             <Link to="/projects" className="hero-back-btn">
-              <ArrowLeft /> Tất cả dự án
+              <ArrowLeft size={16} /> <span>Tất cả dự án</span>
             </Link>
             <span className="hero-category-badge">
               <FolderKanban style={{ width: 14, height: 14 }} />
@@ -214,13 +318,14 @@ export function ProjectDetailPage() {
             </span>
           </div>
 
-          <h1 className="hero-main-title">{data.title}</h1>
+          <h1 className="hero-main-title font-display">{data.title}</h1>
 
+          {/* Concise Summary Paragraph Only */}
           <div className="hero-summary-box">
-            <p>{data.description?.replace(/<[^>]*>?/gm, '')}</p>
+            <p>{cleanSummary}</p>
           </div>
 
-          {/* Direct CTA Buttons in Hero */}
+          {/* Direct Action Buttons */}
           <div className="hero-cta-group">
             {data.demoUrl && (
               <a
@@ -246,42 +351,60 @@ export function ProjectDetailPage() {
         </div>
       </section>
 
-      {/* Project Detail Content Grid */}
+      {/* Project Detail Content Grid (Wider Architecture Section & Dynamic Table of Contents) */}
       <section className="section detail-content-section">
         <div className="content-shell detail-layout-grid">
-          {/* Main Article */}
+          {/* Main Article (Wider Column) */}
           <article className="detail-main-article">
             <div className="detail-article-header">
               <Sparkles className="sparkle-accent" />
-              <h3>Chi tiết kiến trúc & Giải pháp kỹ thuật</h3>
+              <h2 className="font-display text-xl md:text-2xl font-bold text-white">
+                Chi tiết kiến trúc &amp; Giải pháp kỹ thuật
+              </h2>
             </div>
 
+            {/* Dynamic Architecture Content */}
             <div
               className="prose-content-body rich-content"
-              dangerouslySetInnerHTML={{ __html: data.description }}
+              dangerouslySetInnerHTML={{ __html: processedHtml }}
             />
-
-            <div className="project-highlight-box">
-              <h4>🎯 Điểm nổi bật của dự án:</h4>
-              <ul>
-                <li>Kiến trúc module hóa rõ ràng, dễ dàng mở rộng và bảo trì.</li>
-                <li>Tối ưu hóa hiệu năng truy vấn và bảo mật dữ liệu toàn diện.</li>
-                <li>Giao diện thân thiện, tương thích tối đa trên cả mobile và desktop.</li>
-              </ul>
-            </div>
           </article>
 
-          {/* Sidebar Card */}
+          {/* Sticky Sidebar */}
           <aside className="detail-sidebar-card">
+            {/* Sidebar Table of Contents */}
+            {tocItems.length > 0 && (
+              <div className="sidebar-toc-block">
+                <div className="sidebar-card-header">
+                  <List size={16} className="text-emerald-400" />
+                  <h4 className="font-display text-sm font-bold text-white">Mục lục dự án</h4>
+                </div>
+                <nav className="sidebar-toc-list">
+                  {tocItems.map((item, idx) => (
+                    <a
+                      key={item.id}
+                      href={`#${item.id}`}
+                      onClick={(e) => handleScrollTo(e, item.id)}
+                      className={`sidebar-toc-item ${activeTocId === item.id ? 'active' : ''}`}
+                    >
+                      <span className="toc-bullet">{idx + 1}</span>
+                      <span className="toc-label">{item.text}</span>
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            )}
+
+            {/* Project Specs */}
             <div className="sidebar-card-header">
-              <Layers style={{ width: 18, height: 18, color: '#6366f1' }} />
-              <h4>Thông số dự án</h4>
+              <Layers style={{ width: 18, height: 18, color: 'var(--primary)' }} />
+              <h4 className="font-display font-bold">Thông số dự án</h4>
             </div>
 
             <div className="sidebar-info-list">
               <div className="sidebar-info-row">
                 <small>Vai trò đảm nhiệm</small>
-                <b>Full-stack Developer</b>
+                <b>Full-stack / Backend Developer</b>
               </div>
               <div className="sidebar-info-row">
                 <small>Trạng thái dự án</small>

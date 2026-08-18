@@ -1,6 +1,8 @@
-import { ArrowRight, BriefcaseBusiness, Code2, Database, Download, Layers3, Sparkles } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowRight, BriefcaseBusiness, Code2, Database, Download, Layers3, Server, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { CardsSkeleton, HeroSkeleton } from '../components/common/Skeletons'
+import { TiltCard } from '../components/common/TiltCard'
 import { useApiResource } from '../hooks/useApiResource'
 import { getProfile, getProjects, getSkills } from '../services/portfolioApi'
 import { FrontendProfileEditor } from '../admin/FrontendProfileEditor'
@@ -25,7 +27,7 @@ function getCategorySkills(allSkills, groupTitle) {
     .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
     .map(s => s.name)
     .filter(Boolean)
-    .slice(0, 10) // Giới hạn tối đa 10 kỹ năng mỗi nhóm từ Database
+    .slice(0, 10)
 }
 
 export function HomePage() {
@@ -67,7 +69,7 @@ export function HomePage() {
             <>
               <div className="card-grid">
                 {featuredProjects.map(p => (
-                  <article className="project-card reveal" key={p.id}>
+                  <TiltCard className="project-card reveal" key={p.id}>
                     <div className="project-cover">
                       <BriefcaseBusiness />
                       <span>{p.featured ? 'Nổi bật' : 'Hoàn thành'}</span>
@@ -78,7 +80,7 @@ export function HomePage() {
                       <p>{p.description?.replace(/<[^>]*>?/gm, '')}</p>
                       <Link to={`/projects/${p.id}`}>Xem chi tiết <ArrowRight /></Link>
                     </div>
-                  </article>
+                  </TiltCard>
                 ))}
               </div>
               <div className="center-action">
@@ -103,7 +105,7 @@ export function HomePage() {
               {skillGroups.map(([Icon, title]) => {
                 const list = getCategorySkills(skillsState.data, title)
                 return (
-                  <article className="skill-panel reveal" key={title}>
+                  <TiltCard className="skill-panel reveal" key={title}>
                     <div>
                       <Icon />
                       <h3>{title}</h3>
@@ -119,7 +121,7 @@ export function HomePage() {
                         ))
                       )}
                     </ul>
-                  </article>
+                  </TiltCard>
                 )
               })}
             </div>
@@ -142,6 +144,62 @@ export function HomePage() {
 }
 
 function Hero({ profile, projectCount = 0 }) {
+  const [greetingText, setGreetingText] = useState('')
+  const [nameText, setNameText] = useState('')
+  const [roleText, setRoleText] = useState('')
+  const [typingStage, setTypingStage] = useState(0) // 0: Greeting, 1: Name, 2: Role
+  const [visibleTagsCount, setVisibleTagsCount] = useState(0) // 0: None, 1: Java, 2: AI, 3: Microservices, 4: Clean Arch
+
+  const fullGreeting = 'Xin chào, tôi là'
+  const fullName = profile.fullName || 'Nguyễn Quốc Khoa'
+  const fullRole = profile.headline || 'Full-stack Developer'
+
+  // Typewriter effect sequence
+  useEffect(() => {
+    let timer
+
+    if (typingStage === 0) {
+      if (greetingText.length < fullGreeting.length) {
+        timer = setTimeout(() => {
+          setGreetingText(fullGreeting.slice(0, greetingText.length + 1))
+        }, 45)
+      } else {
+        timer = setTimeout(() => setTypingStage(1), 180)
+      }
+    } else if (typingStage === 1) {
+      if (nameText.length < fullName.length) {
+        timer = setTimeout(() => {
+          setNameText(fullName.slice(0, nameText.length + 1))
+        }, 55)
+      } else {
+        timer = setTimeout(() => setTypingStage(2), 220)
+      }
+    } else if (typingStage === 2) {
+      if (roleText.length < fullRole.length) {
+        timer = setTimeout(() => {
+          setRoleText(fullRole.slice(0, roleText.length + 1))
+        }, 45)
+      }
+    }
+
+    return () => clearTimeout(timer)
+  }, [greetingText, nameText, roleText, typingStage, fullGreeting, fullName, fullRole])
+
+  // Sequential Circular Tag Reveal
+  useEffect(() => {
+    const t1 = setTimeout(() => setVisibleTagsCount(1), 600)
+    const t2 = setTimeout(() => setVisibleTagsCount(2), 1300)
+    const t3 = setTimeout(() => setVisibleTagsCount(3), 2000)
+    const t4 = setTimeout(() => setVisibleTagsCount(4), 2700)
+
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+      clearTimeout(t4)
+    }
+  }, [])
+
   return (
     <section className="hero">
       <div className="hero-orb orb-one" />
@@ -149,27 +207,72 @@ function Hero({ profile, projectCount = 0 }) {
       <div className="content-shell hero-grid">
         <div className="hero-copy reveal">
           <span className="availability"><i />Available for work</span>
-          <h1>Xin chào, tôi là<br /><strong>{profile.fullName}</strong></h1>
-          <div className="typing-line">{profile.headline}<span /></div>
+          
+          <h1 className="hero-typewriter-title">
+            <span>{greetingText}</span>
+            {typingStage === 0 && <span className="typewriter-cursor">|</span>}
+            <br />
+            {typingStage >= 1 && (
+              <>
+                <strong>{nameText}</strong>
+                {typingStage === 1 && <span className="typewriter-cursor">|</span>}
+              </>
+            )}
+          </h1>
+
+          <div className="typing-line">
+            {typingStage >= 2 && (
+              <>
+                <span>{roleText}</span>
+                <span className="typewriter-cursor">_</span>
+              </>
+            )}
+          </div>
+
           <p>{profile.shortBio || plainText(profile.bio)}</p>
+
           <div className="hero-actions">
             <Link className="btn primary" to="/profile">Xem Profile</Link>
             <Link className="btn secondary" to="/contact">Liên hệ tôi</Link>
             <Link className="btn ghost" to="/work-process">Quá trình làm việc</Link>
           </div>
+
           <div className="hero-stats">
             <div><b>{projectCount}+</b><span>Dự án</span></div>
             <div><b>4+</b><span>Mảng thực chiến</span></div>
             <div><b>10+</b><span>Công nghệ</span></div>
           </div>
         </div>
+
         <div className="hero-visual reveal">
           <div className="avatar-ring">
             <div className="avatar">
               <img src={profile.avatarUrl || '/images/user_character.svg'} alt={profile.fullName} />
             </div>
-            <span className="float-tag tag-one"><Code2 />Java Developer</span>
-            <span className="float-tag tag-two"><Sparkles />AI Agent</span>
+
+            {visibleTagsCount >= 1 && (
+              <span className="float-tag tag-one pop-tag">
+                <Code2 /> Java Developer
+              </span>
+            )}
+
+            {visibleTagsCount >= 2 && (
+              <span className="float-tag tag-two pop-tag">
+                <Sparkles /> AI Agent
+              </span>
+            )}
+
+            {visibleTagsCount >= 3 && (
+              <span className="float-tag tag-three pop-tag">
+                <Server /> Microservices
+              </span>
+            )}
+
+            {visibleTagsCount >= 4 && (
+              <span className="float-tag tag-four pop-tag">
+                <Layers3 /> Clean Architecture
+              </span>
+            )}
           </div>
         </div>
       </div>
