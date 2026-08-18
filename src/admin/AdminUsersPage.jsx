@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import {
   ShieldCheck,
   UserPlus,
   Trash2,
   Lock,
-  Plus,
-  Globe,
-  Wifi,
-  Clock,
   Calendar,
   AlertCircle,
   X,
@@ -15,49 +12,51 @@ import {
   CheckCircle2,
   Sparkles,
   Users,
+  Smartphone,
+  QrCode,
+  Copy,
+  Check,
+  RotateCcw,
+  KeyRound,
 } from 'lucide-react'
 import {
   getAdminUsers,
   createAdminUser,
   updateAdminUser,
   deleteAdminUser,
-  getAllowedIps,
-  createAllowedIp,
-  deleteAllowedIp,
-  checkAdminAccess,
+  adminReset2Fa,
+  adminMe,
 } from '../services/adminApi'
 import { useToast } from '../components/common/ToastContext'
 
 export function AdminUsersPage() {
   const [users, setUsers] = useState([])
-  const [allowedIps, setAllowedIps] = useState([])
-  const [currentIp, setCurrentIp] = useState('')
+  const [adminInfo, setAdminInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   // Modals state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false)
   const [showEditUserModal, setShowEditUserModal] = useState(null)
-  const [showAddIpModal, setShowAddIpModal] = useState(false)
+  const [showReset2FaModal, setShowReset2FaModal] = useState(false)
+  const [reset2FaData, setReset2FaData] = useState(null)
+  const [copied, setCopied] = useState(false)
 
   // Forms state
   const [createUserForm, setCreateUserForm] = useState({ username: '', password: '', displayName: '' })
   const [editUserForm, setEditUserForm] = useState({ displayName: '', password: '', enabled: true })
-  const [ipForm, setIpForm] = useState({ ipAddress: '', description: '' })
 
   const toast = useToast()
 
   const loadData = async () => {
     try {
       setLoading(true)
-      const [usersData, ipsData, accessData] = await Promise.all([
+      const [usersData, meData] = await Promise.all([
         getAdminUsers().catch(() => []),
-        getAllowedIps().catch(() => []),
-        checkAdminAccess().catch(() => ({ ip: '' })),
+        adminMe().catch(() => null),
       ])
       setUsers(usersData || [])
-      setAllowedIps(ipsData || [])
-      if (accessData?.ip) setCurrentIp(accessData.ip)
+      setAdminInfo(meData)
     } catch (err) {
       toast.error('Lỗi khi tải dữ liệu: ' + (err.message || 'Không xác định'))
     } finally {
@@ -119,54 +118,30 @@ export function AdminUsersPage() {
     }
   }
 
-  // Handle Add Global Allowed IP
-  const handleAddIp = async (e) => {
-    e.preventDefault()
+  // Handle Reset 2FA
+  const handleTriggerReset2Fa = async () => {
+    if (!window.confirm('Bạn có muốn tạo lại mã QR 2FA? Mã cũ trên Google Authenticator sẽ không còn dùng được.')) return
     setSaving(true)
     try {
-      await createAllowedIp(ipForm)
-      toast.success(`Đã thêm IP ${ipForm.ipAddress} vào danh sách cấp quyền!`)
-      setShowAddIpModal(false)
-      setIpForm({ ipAddress: '', description: '' })
-      loadData()
+      const res = await adminReset2Fa()
+      setReset2FaData(res)
+      setShowReset2FaModal(true)
+      toast.success('Đã tạo mã QR 2FA mới!')
     } catch (err) {
-      toast.error('Lỗi thêm IP: ' + (err.message || 'Thất bại'))
+      toast.error('Lỗi tạo lại 2FA: ' + (err.message || 'Thất bại'))
     } finally {
       setSaving(false)
     }
   }
 
-  // Handle Quick Add Current IP to Global Whitelist
-  const handleQuickAddCurrentIp = async () => {
-    if (!currentIp) {
-      toast.error('Không xác định được IP hiện tại!')
-      return
-    }
-    try {
-      await createAllowedIp({
-        ipAddress: currentIp,
-        description: 'Wi-Fi hiện tại của bạn',
-      })
-      toast.success(`Đã thêm nhanh IP hiện tại (${currentIp}) vào hệ thống!`)
-      loadData()
-    } catch (err) {
-      toast.error('Lỗi thêm IP: ' + (err.message || 'IP đã tồn tại hoặc lỗi'))
+  const handleCopySecret = () => {
+    if (reset2FaData?.totpSecret) {
+      navigator.clipboard.writeText(reset2FaData.totpSecret)
+      setCopied(true)
+      toast.success('Đã sao chép khóa bí mật vào clipboard!')
+      setTimeout(() => setCopied(false), 2500)
     }
   }
-
-  // Handle Delete Global IP
-  const handleDeleteIp = async (ip) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa quyền truy cập của IP ${ip.ipAddress}?`)) return
-    try {
-      await deleteAllowedIp(ip.id)
-      toast.success(`Đã xóa IP ${ip.ipAddress}!`)
-      loadData()
-    } catch (err) {
-      toast.error('Lỗi khi xóa IP: ' + (err.message || 'Thất bại'))
-    }
-  }
-
-  const isCurrentIpAllowed = allowedIps.some(ip => ip.ipAddress === currentIp || ip.ipAddress === '*' || ip.ipAddress === '0.0.0.0')
 
   return (
     <div className="admin-page">
@@ -174,124 +149,52 @@ export function AdminUsersPage() {
       <div className="admin-heading">
         <div>
           <span>Bảo Mật & Quản Trị Hệ Thống</span>
-          <h1>Tài Khoản & IP Whitelist</h1>
+          <h1>Tài Khoản & Xác Thực 2 Lớp (2FA)</h1>
         </div>
-        <small>IP Whitelist áp dụng dùng chung cho toàn bộ tài khoản quản trị</small>
+        <small>Bảo mật cấp doanh nghiệp với Google Authenticator (RFC 6238 TOTP)</small>
       </div>
 
-      {/* ================= SECTION 1: GLOBAL IP WHITELIST ================= */}
+      {/* ================= SECTION 1: 2FA TOTP SECURITY CARD ================= */}
       <div className="admin-section-box">
         <div className="admin-section-header">
           <div className="flex items-center gap-2">
-            <Globe className="text-indigo-600" size={22} />
+            <Smartphone className="text-emerald-500" size={22} />
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Danh Sách IP Được Cấp Quyền (IP Whitelist)</h2>
-              <p className="text-xs text-slate-500">Các địa chỉ IP mạng được phép mở trang quản trị Admin và đăng nhập.</p>
+              <h2 className="text-lg font-bold text-slate-800">Xác Thực 2 Lớp Google Authenticator (TOTP 2FA)</h2>
+              <p className="text-xs text-slate-500">Mã OTP 6 chữ số sinh động trên điện thoại di động mỗi 30 giây.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isCurrentIpAllowed && currentIp && (
-              <button
-                type="button"
-                className="admin-btn-accent"
-                onClick={handleQuickAddCurrentIp}
-              >
-                <Sparkles size={15} />
-                <span>+ Thêm IP hiện tại ({currentIp})</span>
-              </button>
-            )}
             <button
               type="button"
-              className="admin-btn-primary"
-              onClick={() => {
-                setIpForm({ ipAddress: '', description: '' })
-                setShowAddIpModal(true)
-              }}
+              className="admin-btn-secondary"
+              onClick={handleTriggerReset2Fa}
+              disabled={saving}
             >
-              <Plus size={16} />
-              <span>Thêm IP Mới</span>
+              <RotateCcw size={15} />
+              <span>Cài đặt lại QR trên điện thoại mới</span>
             </button>
           </div>
         </div>
 
-        {/* Current IP Alert Strip */}
+        {/* 2FA Status Banner */}
         <div className="admin-ip-strip">
           <div className="flex items-center gap-3">
-            <div className="admin-ip-icon-badge">
-              <Wifi size={18} />
+            <div className="admin-ip-icon-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+              <ShieldCheck size={20} />
             </div>
             <div>
-              <span className="text-xs text-slate-500 font-medium">IP Wi-Fi hiện tại của bạn: </span>
-              <strong className="text-sm font-mono text-indigo-700 ml-1">{currentIp || 'Đang nhận diện...'}</strong>
+              <span className="text-xs text-slate-500 font-medium">Trạng thái bảo mật Admin: </span>
+              <strong className="text-sm text-emerald-700 ml-1">Đang được bảo vệ bằng 2FA TOTP</strong>
             </div>
           </div>
-          {isCurrentIpAllowed ? (
-            <span className="admin-badge-active">
-              <CheckCircle2 size={13} /> Mạng hiện tại đã được cấp quyền
-            </span>
-          ) : (
-            <span className="admin-badge-locked">
-              <AlertCircle size={13} /> Mạng hiện tại chưa nằm trong Whitelist
-            </span>
-          )}
+          <span className="admin-badge-active">
+            <CheckCircle2 size={13} /> Không phụ thuộc IP mạng · Chống 100% rò rỉ mật khẩu
+          </span>
         </div>
 
-        {/* Allowed IPs Table */}
-        <div className="admin-table-wrap mt-3">
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: '220px' }}>Địa chỉ IP mạng</th>
-                <th>Mô tả / Nhãn gợi nhớ</th>
-                <th style={{ width: '120px' }}>Trạng thái</th>
-                <th style={{ width: '80px', textAlign: 'center' }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allowedIps.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="text-center py-6 text-slate-400">
-                    Chưa có IP nào trong danh sách. Hệ thống sẽ mở cho tất cả IP hoặc chỉ xác thực bằng mật khẩu.
-                  </td>
-                </tr>
-              ) : (
-                allowedIps.map((ip) => {
-                  const isCurrent = ip.ipAddress === currentIp
-
-                  return (
-                    <tr key={ip.id} className={isCurrent ? 'admin-row-highlight' : ''}>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <code className="admin-ip-code">{ip.ipAddress}</code>
-                          {isCurrent && <span className="admin-chip-current-tag">IP hiện tại</span>}
-                          {ip.ipAddress === '*' && <span className="admin-chip-all-tag">Tất cả IP (*)</span>}
-                        </div>
-                      </td>
-                      <td className="text-slate-600 font-medium">
-                        {ip.description || <span className="text-slate-400 italic">Không có mô tả</span>}
-                      </td>
-                      <td>
-                        <span className="admin-badge-active">
-                          <CheckCircle2 size={12} /> Cho phép
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div className="row-actions justify-center">
-                          <button
-                            className="danger"
-                            title="Xóa quyền truy cập IP này"
-                            onClick={() => handleDeleteIp(ip)}
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mt-3 text-xs text-slate-600 leading-relaxed">
+          💡 <strong>Hướng dẫn:</strong> Khi đăng nhập từ bất kỳ thiết bị hay mạng Wi-Fi/4G nào, sau khi nhập username & password, bạn chỉ cần mở ứng dụng <strong>Google Authenticator</strong> hoặc <strong>Microsoft Authenticator</strong> trên điện thoại và nhập mã 6 số hiển thị trên màn hình.
         </div>
       </div>
 
@@ -302,7 +205,7 @@ export function AdminUsersPage() {
             <Users className="text-indigo-600" size={22} />
             <div>
               <h2 className="text-lg font-bold text-slate-800">Danh Sách Tài Khoản Quản Trị Viên</h2>
-              <p className="text-xs text-slate-500">Các tài khoản có quyền truy cập và thao tác trên Admin Portal.</p>
+              <p className="text-xs text-slate-500">Các tài khoản có quyền truy cập và quản lý hệ thống.</p>
             </div>
           </div>
           <button
@@ -395,6 +298,58 @@ export function AdminUsersPage() {
           </table>
         </div>
       </div>
+
+      {/* ================= MODAL: RESET 2FA QR CODE ================= */}
+      {showReset2FaModal && reset2FaData && (
+        <div className="admin-modal" onClick={() => setShowReset2FaModal(false)}>
+          <div className="admin-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', textAlign: 'center' }}>
+            <header>
+              <div>
+                <span>Cài Đặt Lại Google Authenticator</span>
+                <h2>Quét Mã QR 2FA Mới</h2>
+              </div>
+              <button type="button" onClick={() => setShowReset2FaModal(false)}><X size={18} /></button>
+            </header>
+
+            <div style={{ padding: '24px' }}>
+              <p className="text-xs text-slate-500 mb-4">
+                Mở ứng dụng <strong>Google Authenticator</strong> trên điện thoại ➔ Thêm tài khoản mới ➔ Quét mã QR:
+              </p>
+
+              <div className="qr-code-wrapper" style={{ margin: '0 auto 16px', display: 'inline-block' }}>
+                <QRCodeSVG
+                  value={reset2FaData.otpAuthUri}
+                  size={180}
+                  bgColor="#ffffff"
+                  fgColor="#0a0f1d"
+                  level="Q"
+                  includeMargin
+                />
+              </div>
+
+              <div className="secret-copy-box" style={{ marginTop: '12px', textAlign: 'left' }}>
+                <span className="secret-label">Khóa bí mật thủ công:</span>
+                <div className="secret-row">
+                  <code className="secret-code">{reset2FaData.totpSecret}</code>
+                  <button
+                    type="button"
+                    className="copy-secret-btn"
+                    onClick={handleCopySecret}
+                  >
+                    {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <footer>
+              <button type="button" className="save" onClick={() => setShowReset2FaModal(false)}>
+                Đã Quét Xong & Hoàn Tất
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
 
       {/* ================= MODAL: CREATE ADMIN USER ================= */}
       {showCreateUserModal && (
@@ -503,62 +458,6 @@ export function AdminUsersPage() {
               <button type="button" onClick={() => setShowEditUserModal(null)}>Hủy</button>
               <button type="submit" className="save" disabled={saving}>
                 {saving ? 'Đang lưu...' : 'Lưu Thay Đổi'}
-              </button>
-            </footer>
-          </form>
-        </div>
-      )}
-
-      {/* ================= MODAL: ADD GLOBAL ALLOWED IP ================= */}
-      {showAddIpModal && (
-        <div className="admin-modal" onClick={() => setShowAddIpModal(false)}>
-          <form onSubmit={handleAddIp} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <header>
-              <div>
-                <span>IP Whitelist Hệ Thống</span>
-                <h2>Cấp Quyền Địa Chỉ IP</h2>
-              </div>
-              <button type="button" onClick={() => setShowAddIpModal(false)}><X size={18} /></button>
-            </header>
-
-            <div className="admin-form-grid" style={{ gridTemplateColumns: '1fr', padding: '20px 24px' }}>
-              <label>
-                <div className="flex justify-between items-center mb-1">
-                  <span>Địa chỉ IP mạng *</span>
-                  {currentIp && (
-                    <button
-                      type="button"
-                      className="text-xs text-indigo-600 hover:text-indigo-700 underline font-medium"
-                      onClick={() => setIpForm({ ...ipForm, ipAddress: currentIp, description: 'Wi-Fi hiện tại của tôi' })}
-                    >
-                      Điền IP hiện tại ({currentIp})
-                    </button>
-                  )}
-                </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="ví dụ: 171.225.8.206 hoặc *"
-                  value={ipForm.ipAddress}
-                  onChange={(e) => setIpForm({ ...ipForm, ipAddress: e.target.value })}
-                />
-              </label>
-
-              <label>
-                <span>Ghi chú / Nhãn gợi nhớ (tùy chọn)</span>
-                <input
-                  type="text"
-                  placeholder="ví dụ: Wi-Fi Nhà, Mạng Công Ty, 4G Viettel..."
-                  value={ipForm.description}
-                  onChange={(e) => setIpForm({ ...ipForm, description: e.target.value })}
-                />
-              </label>
-            </div>
-
-            <footer>
-              <button type="button" onClick={() => setShowAddIpModal(false)}>Hủy</button>
-              <button type="submit" className="save" disabled={saving}>
-                {saving ? 'Đang thêm...' : 'Cấp Quyền IP'}
               </button>
             </footer>
           </form>

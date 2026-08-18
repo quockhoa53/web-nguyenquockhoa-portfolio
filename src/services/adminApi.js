@@ -2,13 +2,17 @@ import { request } from './httpClient'
 
 const json = (method, data) => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
 
-export const adminLogin = async (data) => {
-  const result = await request('/admin/auth/login', json('POST', data))
+export const adminLogin = (data) => request('/admin/auth/login', json('POST', data))
+
+export const adminVerify2Fa = async (data) => {
+  const result = await request('/admin/auth/verify-2fa', json('POST', data))
   if (result && result.token) {
     localStorage.setItem('portfolio_admin_token', result.token)
   }
   return result
 }
+
+export const adminReset2Fa = () => request('/admin/auth/reset-2fa', { method: 'POST' })
 
 export const checkAdminAccess = () => request('/admin/auth/access-check')
 export const adminMe = () => request('/admin/auth/me')
