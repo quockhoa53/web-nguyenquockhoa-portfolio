@@ -13,7 +13,7 @@ import {
   Minimize2
 } from 'lucide-react'
 
-const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'http://localhost:8000'
+const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
 
 const DEFAULT_SUGGESTIONS = [
   'Kinh nghiệm làm việc & năng lực của Khoa?',
