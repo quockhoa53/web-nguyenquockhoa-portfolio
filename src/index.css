@@ -5890,19 +5890,28 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+}
+
+.launcher-bot-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
 }
 
 .online-dot {
   position: absolute;
   top: -2px;
   right: -3px;
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: #22c55e;
   border: 2px solid #ffffff;
   box-shadow: 0 0 8px #22c55e;
+  z-index: 2;
 }
 
 /* Chat Modal Window */
@@ -5962,25 +5971,34 @@ button {
 
 .bot-avatar {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-  color: #ffffff;
   display: grid;
   place-items: center;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.header-bot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border-glow);
+  display: block;
 }
 
 .avatar-online-badge {
   position: absolute;
   bottom: -2px;
   right: -2px;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #22c55e;
   border: 1.5px solid var(--surface);
+  box-shadow: 0 0 5px #22c55e;
+  z-index: 2;
 }
 
 .bot-name {
@@ -6068,14 +6086,22 @@ button {
 }
 
 .msg-bot-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #10b981, #06b6d4);
-  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.msg-bot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .chat-bubble {

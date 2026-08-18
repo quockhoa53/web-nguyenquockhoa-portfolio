@@ -209,7 +209,7 @@ export function PortfolioChatWidget() {
           >
             <div className="launcher-pulse-ring" />
             <div className="launcher-icon-box">
-              <Bot size={26} className="launcher-bot-icon" />
+              <img src="/chatbot-avatar.png" alt="NQK AI Robot" className="launcher-bot-img" />
               <span className="online-dot" />
             </div>
           </button>
@@ -223,7 +223,7 @@ export function PortfolioChatWidget() {
           <div className="chat-header">
             <div className="chat-header-info">
               <div className="bot-avatar">
-                <Bot size={22} />
+                <img src="/chatbot-avatar.png" alt="NQK AI Robot" className="header-bot-img" />
                 <span className="avatar-online-badge" />
               </div>
               <div>
@@ -268,7 +268,7 @@ export function PortfolioChatWidget() {
               >
                 {m.role === 'assistant' && (
                   <div className="msg-bot-avatar">
-                    <Bot size={16} />
+                    <img src="/chatbot-avatar.png" alt="NQK AI" className="msg-bot-img" />
                   </div>
                 )}
 
