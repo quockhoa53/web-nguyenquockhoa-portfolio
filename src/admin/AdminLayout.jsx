@@ -7,7 +7,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary'
 
 const links = [
   ['', 'Dashboard', BarChart3],
-  ['users', 'Tài khoản & IP', ShieldCheck],
+  ['users', 'Tài khoản & 2FA', ShieldCheck],
   ['profile', 'Profile', UserRound],
   ['skills', 'Năng lực kỹ thuật', BriefcaseBusiness],
   ['experiences', 'Kinh nghiệm', Route],
@@ -23,23 +23,23 @@ const links = [
 
 export function AdminLayout() {
   const [admin, setAdmin] = useState(null)
-  const [access, setAccess] = useState(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    checkAdminAccess()
-      .then(result => {
-        setAccess(result)
-        if (!result.allowed) return null
-        return adminMe().then(setAdmin).catch(() => setAdmin(false))
-      })
-      .catch(() => setAccess({ allowed: false, ip: 'Không xác định' }))
+    adminMe()
+      .then(setAdmin)
+      .catch(() => setAdmin(false))
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="admin-loading">Đang kiểm tra phiên quản trị…</div>
-  if (!access?.allowed) return <AdminAccessDenied ip={access?.ip} />
+  if (loading) {
+    return (
+      <div className="admin-loading-screen">
+        <div className="admin-spinner" />
+      </div>
+    )
+  }
   if (!admin) return <Navigate to="/admin/login" replace />
 
   async function logout() {

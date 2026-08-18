@@ -10,7 +10,9 @@ import {
   Copy,
   Check,
   ArrowLeft,
-  Smartphone
+  Smartphone,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { adminLogin, adminVerify2Fa } from '../services/adminApi'
 import { useToast } from '../components/common/ToastContext'
@@ -18,6 +20,7 @@ import { useToast } from '../components/common/ToastContext'
 export function AdminLoginPage() {
   const [form, setForm] = useState({ username: '', password: '' })
   const [step, setStep] = useState(1) // 1: Credentials, 2: 2FA TOTP
+  const [showSecret, setShowSecret] = useState(false)
   const [totpData, setTotpData] = useState({
     preAuthToken: '',
     isSetup: false,
@@ -194,16 +197,30 @@ export function AdminLoginPage() {
               </div>
 
               <div className="secret-copy-box">
-                <span className="secret-label">Khóa bí mật dự phòng:</span>
+                <span className="secret-label">Khóa bí mật dự phòng (Nhập thủ công nếu không quét được QR):</span>
                 <div className="secret-row">
-                  <code className="secret-code">{totpData.totpSecret}</code>
+                  <input
+                    type={showSecret ? 'text' : 'password'}
+                    readOnly
+                    value={totpData.totpSecret}
+                    className="secret-input font-mono"
+                    aria-label="Khóa bí mật 2FA"
+                  />
                   <button
                     type="button"
-                    className="copy-secret-btn"
+                    className="secret-action-btn"
+                    onClick={() => setShowSecret(!showSecret)}
+                    title={showSecret ? 'Ẩn mã khóa' : 'Xem mã khóa'}
+                  >
+                    {showSecret ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                  <button
+                    type="button"
+                    className="secret-action-btn"
                     onClick={handleCopySecret}
                     title="Sao chép khóa bí mật"
                   >
-                    {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                    {copied ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
                   </button>
                 </div>
               </div>

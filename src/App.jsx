@@ -21,7 +21,7 @@ import { ToastProvider } from './components/common/ToastContext'
 export default function App() {
   return (
     <ToastProvider>
-      <Suspense fallback={<div className="admin-loading">Đang tải giao diện…</div>}><Routes>
+      <Suspense fallback={<div className="admin-loading-screen"><div className="admin-spinner" /></div>}><Routes>
         <Route path="admin/login" element={<AdminLoginPage />} />
         <Route path="admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />

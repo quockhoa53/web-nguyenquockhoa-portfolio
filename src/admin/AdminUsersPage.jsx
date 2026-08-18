@@ -18,6 +18,8 @@ import {
   Check,
   RotateCcw,
   KeyRound,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import {
   getAdminUsers,
@@ -39,6 +41,7 @@ export function AdminUsersPage() {
   const [showCreateUserModal, setShowCreateUserModal] = useState(false)
   const [showEditUserModal, setShowEditUserModal] = useState(null)
   const [showReset2FaModal, setShowReset2FaModal] = useState(false)
+  const [showResetSecret, setShowResetSecret] = useState(false)
   const [reset2FaData, setReset2FaData] = useState(null)
   const [copied, setCopied] = useState(false)
 
@@ -330,13 +333,28 @@ export function AdminUsersPage() {
               <div className="secret-copy-box" style={{ marginTop: '12px', textAlign: 'left' }}>
                 <span className="secret-label">Khóa bí mật thủ công:</span>
                 <div className="secret-row">
-                  <code className="secret-code">{reset2FaData.totpSecret}</code>
+                  <input
+                    type={showResetSecret ? 'text' : 'password'}
+                    readOnly
+                    value={reset2FaData.totpSecret}
+                    className="secret-input font-mono"
+                    aria-label="Khóa bí mật 2FA"
+                  />
                   <button
                     type="button"
-                    className="copy-secret-btn"
-                    onClick={handleCopySecret}
+                    className="secret-action-btn"
+                    onClick={() => setShowResetSecret(!showResetSecret)}
+                    title={showResetSecret ? 'Ẩn mã khóa' : 'Xem mã khóa'}
                   >
-                    {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                    {showResetSecret ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                  <button
+                    type="button"
+                    className="secret-action-btn"
+                    onClick={handleCopySecret}
+                    title="Sao chép khóa bí mật"
+                  >
+                    {copied ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
                   </button>
                 </div>
               </div>
