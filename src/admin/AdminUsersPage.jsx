@@ -5,19 +5,14 @@ import {
   UserPlus,
   Trash2,
   Lock,
-  Calendar,
-  AlertCircle,
   X,
   Edit2,
   CheckCircle2,
-  Sparkles,
   Users,
   Smartphone,
-  QrCode,
   Copy,
   Check,
   RotateCcw,
-  KeyRound,
   Eye,
   EyeOff,
 } from 'lucide-react'
@@ -27,13 +22,11 @@ import {
   updateAdminUser,
   deleteAdminUser,
   adminReset2Fa,
-  adminMe,
 } from '../services/adminApi'
 import { useToast } from '../components/common/ToastContext'
 
 export function AdminUsersPage() {
   const [users, setUsers] = useState([])
-  const [adminInfo, setAdminInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -54,14 +47,10 @@ export function AdminUsersPage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [usersData, meData] = await Promise.all([
-        getAdminUsers().catch(() => []),
-        adminMe().catch(() => null),
-      ])
+      const usersData = await getAdminUsers().catch(() => [])
       setUsers(usersData || [])
-      setAdminInfo(meData)
     } catch (err) {
-      toast.error('Lỗi khi tải dữ liệu: ' + (err.message || 'Không xác định'))
+      toast.error('Lỗi khi tải danh sách: ' + (err.message || 'Không xác định'))
     } finally {
       setLoading(false)
     }
@@ -123,7 +112,7 @@ export function AdminUsersPage() {
 
   // Handle Reset 2FA
   const handleTriggerReset2Fa = async () => {
-    if (!window.confirm('Bạn có muốn tạo lại mã QR 2FA? Mã cũ trên Google Authenticator sẽ không còn dùng được.')) return
+    if (!window.confirm('Bạn có muốn tạo lại mã QR 2FA? Mã trên ứng dụng cũ sẽ không còn dùng được.')) return
     setSaving(true)
     try {
       const res = await adminReset2Fa()
@@ -141,7 +130,7 @@ export function AdminUsersPage() {
     if (reset2FaData?.totpSecret) {
       navigator.clipboard.writeText(reset2FaData.totpSecret)
       setCopied(true)
-      toast.success('Đã sao chép khóa bí mật vào clipboard!')
+      toast.success('Đã sao chép khóa bí mật!')
       setTimeout(() => setCopied(false), 2500)
     }
   }
@@ -151,64 +140,48 @@ export function AdminUsersPage() {
       {/* Page Heading */}
       <div className="admin-heading">
         <div>
-          <span>Bảo Mật & Quản Trị Hệ Thống</span>
-          <h1>Tài Khoản & Xác Thực 2 Lớp (2FA)</h1>
+          <span>Bảo Mật &amp; Phân Quyền</span>
+          <h1>Quản Trị Viên &amp; Xác Thực 2FA</h1>
         </div>
-        <small>Bảo mật cấp doanh nghiệp với Google Authenticator (RFC 6238 TOTP)</small>
       </div>
 
-      {/* ================= SECTION 1: 2FA TOTP SECURITY CARD ================= */}
+      {/* ================= COMPACT 2FA STATUS CARD ================= */}
+      <div className="admin-section-box" style={{ padding: '16px 20px', marginBottom: '24px' }}>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className="admin-user-avatar-sm" style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: '#ffffff' }}>
+              <ShieldCheck size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-800 m-0">Xác thực 2 lớp (Google Authenticator)</h3>
+                <span className="admin-badge-active">
+                  <CheckCircle2 size={12} /> Đang bật
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 m-0 mt-0.5">Mã OTP 6 số trên điện thoại bảo vệ an toàn cho mọi tài khoản.</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="admin-btn-secondary"
+            onClick={handleTriggerReset2Fa}
+            disabled={saving}
+          >
+            <RotateCcw size={14} />
+            <span>Cài lại QR trên máy mới</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ================= ADMIN USERS LIST ================= */}
       <div className="admin-section-box">
         <div className="admin-section-header">
           <div className="flex items-center gap-2">
-            <Smartphone className="text-emerald-500" size={22} />
+            <Users className="text-indigo-600" size={20} />
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Xác Thực 2 Lớp Google Authenticator (TOTP 2FA)</h2>
-              <p className="text-xs text-slate-500">Mã OTP 6 chữ số sinh động trên điện thoại di động mỗi 30 giây.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="admin-btn-secondary"
-              onClick={handleTriggerReset2Fa}
-              disabled={saving}
-            >
-              <RotateCcw size={15} />
-              <span>Cài đặt lại QR trên điện thoại mới</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 2FA Status Banner */}
-        <div className="admin-ip-strip">
-          <div className="flex items-center gap-3">
-            <div className="admin-ip-icon-badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
-              <ShieldCheck size={20} />
-            </div>
-            <div>
-              <span className="text-xs text-slate-500 font-medium">Trạng thái bảo mật Admin: </span>
-              <strong className="text-sm text-emerald-700 ml-1">Đang được bảo vệ bằng 2FA TOTP</strong>
-            </div>
-          </div>
-          <span className="admin-badge-active">
-            <CheckCircle2 size={13} /> Không phụ thuộc IP mạng · Chống 100% rò rỉ mật khẩu
-          </span>
-        </div>
-
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mt-3 text-xs text-slate-600 leading-relaxed">
-          💡 <strong>Hướng dẫn:</strong> Khi đăng nhập từ bất kỳ thiết bị hay mạng Wi-Fi/4G nào, sau khi nhập username & password, bạn chỉ cần mở ứng dụng <strong>Google Authenticator</strong> hoặc <strong>Microsoft Authenticator</strong> trên điện thoại và nhập mã 6 số hiển thị trên màn hình.
-        </div>
-      </div>
-
-      {/* ================= SECTION 2: ADMIN USERS ================= */}
-      <div className="admin-section-box mt-8">
-        <div className="admin-section-header">
-          <div className="flex items-center gap-2">
-            <Users className="text-indigo-600" size={22} />
-            <div>
-              <h2 className="text-lg font-bold text-slate-800">Danh Sách Tài Khoản Quản Trị Viên</h2>
-              <p className="text-xs text-slate-500">Các tài khoản có quyền truy cập và quản lý hệ thống.</p>
+              <h2 className="text-base font-bold text-slate-800">Danh Sách Tài Khoản</h2>
             </div>
           </div>
           <button
@@ -219,7 +192,7 @@ export function AdminUsersPage() {
               setShowCreateUserModal(true)
             }}
           >
-            <UserPlus size={16} />
+            <UserPlus size={15} />
             <span>Tạo Admin Mới</span>
           </button>
         </div>
@@ -229,11 +202,11 @@ export function AdminUsersPage() {
           <table>
             <thead>
               <tr>
-                <th>Tài khoản & Tên hiển thị</th>
+                <th>Tài khoản &amp; Tên hiển thị</th>
                 <th style={{ width: '130px' }}>Trạng thái</th>
-                <th style={{ width: '180px' }}>Ngày tạo</th>
-                <th style={{ width: '190px' }}>Đăng nhập gần nhất</th>
-                <th style={{ width: '110px', textAlign: 'center' }}>Thao tác</th>
+                <th style={{ width: '150px' }}>Ngày tạo</th>
+                <th style={{ width: '180px' }}>Đăng nhập gần nhất</th>
+                <th style={{ width: '90px', textAlign: 'center' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -305,7 +278,7 @@ export function AdminUsersPage() {
       {/* ================= MODAL: RESET 2FA QR CODE ================= */}
       {showReset2FaModal && reset2FaData && (
         <div className="admin-modal" onClick={() => setShowReset2FaModal(false)}>
-          <div className="admin-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', textAlign: 'center' }}>
+          <div className="admin-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px', textAlign: 'center' }}>
             <header>
               <div>
                 <span>Cài Đặt Lại Google Authenticator</span>
@@ -314,15 +287,15 @@ export function AdminUsersPage() {
               <button type="button" onClick={() => setShowReset2FaModal(false)}><X size={18} /></button>
             </header>
 
-            <div style={{ padding: '24px' }}>
-              <p className="text-xs text-slate-500 mb-4">
-                Mở ứng dụng <strong>Google Authenticator</strong> trên điện thoại ➔ Thêm tài khoản mới ➔ Quét mã QR:
+            <div style={{ padding: '20px 24px' }}>
+              <p className="text-xs text-slate-500 mb-3 text-left">
+                Mở ứng dụng <strong>Google Authenticator</strong> trên điện thoại và quét mã QR:
               </p>
 
-              <div className="qr-code-wrapper" style={{ margin: '0 auto 16px', display: 'inline-block' }}>
+              <div className="qr-code-wrapper" style={{ margin: '0 auto 12px', display: 'inline-block' }}>
                 <QRCodeSVG
                   value={reset2FaData.otpAuthUri}
-                  size={180}
+                  size={168}
                   bgColor="#ffffff"
                   fgColor="#0a0f1d"
                   level="Q"
@@ -330,7 +303,7 @@ export function AdminUsersPage() {
                 />
               </div>
 
-              <div className="secret-copy-box" style={{ marginTop: '12px', textAlign: 'left' }}>
+              <div className="secret-copy-box" style={{ marginTop: '8px', textAlign: 'left' }}>
                 <span className="secret-label">Khóa bí mật thủ công:</span>
                 <div className="secret-row">
                   <input
@@ -362,7 +335,7 @@ export function AdminUsersPage() {
 
             <footer>
               <button type="button" className="save" onClick={() => setShowReset2FaModal(false)}>
-                Đã Quét Xong & Hoàn Tất
+                Đã Quét Xong &amp; Hoàn Tất
               </button>
             </footer>
           </div>
@@ -372,7 +345,7 @@ export function AdminUsersPage() {
       {/* ================= MODAL: CREATE ADMIN USER ================= */}
       {showCreateUserModal && (
         <div className="admin-modal" onClick={() => setShowCreateUserModal(false)}>
-          <form onSubmit={handleCreateUser} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+          <form onSubmit={handleCreateUser} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <header>
               <div>
                 <span>Bảo Mật Quản Trị</span>
@@ -387,7 +360,7 @@ export function AdminUsersPage() {
                 <input
                   type="text"
                   required
-                  placeholder="ví dụ: admin_khoa, assistant_01"
+                  placeholder="ví dụ: admin_khoa"
                   value={createUserForm.username}
                   onChange={(e) => setCreateUserForm({ ...createUserForm, username: e.target.value })}
                 />
@@ -398,7 +371,7 @@ export function AdminUsersPage() {
                 <input
                   type="text"
                   required
-                  placeholder="ví dụ: Nguyễn Quốc Khoa (Admin)"
+                  placeholder="ví dụ: Nguyễn Quốc Khoa"
                   value={createUserForm.displayName}
                   onChange={(e) => setCreateUserForm({ ...createUserForm, displayName: e.target.value })}
                 />
@@ -429,7 +402,7 @@ export function AdminUsersPage() {
       {/* ================= MODAL: EDIT ADMIN USER ================= */}
       {showEditUserModal && (
         <div className="admin-modal" onClick={() => setShowEditUserModal(null)}>
-          <form onSubmit={handleUpdateUser} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+          <form onSubmit={handleUpdateUser} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <header>
               <div>
                 <span>Chỉnh Sửa Tài Khoản</span>

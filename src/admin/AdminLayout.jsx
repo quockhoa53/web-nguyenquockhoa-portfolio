@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { BarChart3, BookOpen, BriefcaseBusiness, ExternalLink, FolderKanban, Heart, LogOut, Mail, MessageSquare, Route, ShieldCheck, Sparkles, UserRound, Users } from 'lucide-react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
-import { adminLogout, adminMe, checkAdminAccess } from '../services/adminApi'
-import { AdminAccessDenied } from './AdminAccessDenied'
+import { adminLogout, adminMe } from '../services/adminApi'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 
 const links = [
   ['', 'Dashboard', BarChart3],
-  ['users', 'Tài khoản & 2FA', ShieldCheck],
+  ['users', 'Quản trị viên', ShieldCheck],
   ['profile', 'Profile', UserRound],
   ['skills', 'Năng lực kỹ thuật', BriefcaseBusiness],
   ['experiences', 'Kinh nghiệm', Route],
@@ -78,7 +77,6 @@ export function AdminLayout() {
             <b>Trang quản trị danh mục &amp; nội dung</b>
           </div>
           <div className="admin-topbar-actions">
-            <span className="admin-topbar-ip">IP: {access.ip}</span>
             <a href="/" target="_blank" rel="noreferrer"><ExternalLink /><span>Xem trang chủ</span></a>
           </div>
         </header>
