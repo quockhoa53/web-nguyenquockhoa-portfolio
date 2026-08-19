@@ -19,8 +19,21 @@ const configs = {
   skills: { title: 'Năng lực kỹ thuật', load: getSkills, resource: 'skills', fields: [['name', 'Tên kỹ năng'], ['category', 'Nhóm kỹ năng', 'select', SKILL_CATEGORIES], ['proficiency', 'Mức độ (%)', 'number'], ['displayOrder', 'Thứ tự hiển thị', 'number']] },
   experiences: { title: 'Kinh nghiệm', load: getExperiences, resource: 'experiences', fields: [['company', 'Công ty'], ['position', 'Vị trí'], ['startDate', 'Ngày bắt đầu', 'date'], ['endDate', 'Ngày kết thúc', 'date'], ['description', 'Mô tả', 'rich'], ['displayOrder', 'Thứ tự', 'number']] },
   projects: { title: 'Dự án', load: getProjects, resource: 'projects', fields: [['title', 'Tên dự án'], ['description', 'Nội dung', 'rich'], ['technologies', 'Công nghệ'], ['imageUrl', 'Ảnh'], ['demoUrl', 'Demo URL'], ['sourceUrl', 'Source URL'], ['featured', 'Nổi bật', 'checkbox'], ['displayOrder', 'Thứ tự', 'number']] },
-  categories: { title: 'Danh mục kiến thức', load: getKnowledgeCategories, resource: 'knowledge/categories', fields: [['name', 'Tên'], ['slug', 'Slug'], ['description', 'Mô tả', 'rich'], ['displayOrder', 'Thứ tự', 'number']] },
-  articles: { title: 'Bài viết kiến thức', load: getAdminArticles, resource: 'knowledge/articles', fields: [['categoryId', 'Category ID', 'number'], ['title', 'Tiêu đề'], ['slug', 'Slug'], ['summary', 'Tóm tắt', 'rich'], ['content', 'Nội dung', 'rich'], ['thumbnailUrl', 'Ảnh bìa'], ['status', 'Trạng thái', 'select', ['DRAFT', 'PUBLISHED', 'ARCHIVED']], ['featured', 'Nổi bật', 'checkbox']] },
+  categories: { title: 'Danh mục kiến thức', load: getKnowledgeCategories, resource: 'knowledge/categories', fields: [['name', 'Tên danh mục'], ['slug', 'Slug (Tùy chọn)'], ['description', 'Mô tả', 'rich'], ['displayOrder', 'Thứ tự', 'number']] },
+  articles: {
+    title: 'Bài viết kiến thức',
+    load: getAdminArticles,
+    resource: 'knowledge/articles',
+    fields: [
+      ['categoryId', 'Loại kiến thức (Danh mục)', 'category_select'],
+      ['title', 'Tiêu đề bài viết'],
+      ['summary', 'Tóm tắt bài viết', 'textarea'],
+      ['content', 'Nội dung chi tiết bài viết', 'rich'],
+      ['thumbnailUrl', 'Ảnh bìa (URL)'],
+      ['status', 'Trạng thái', 'select', ['PUBLISHED', 'DRAFT', 'ARCHIVED']],
+      ['featured', 'Đánh dấu nổi bật', 'checkbox']
+    ]
+  },
   'work-items': { title: 'Quá trình làm việc', load: getAdminWorkItems, resource: 'work-items', fields: [['title', 'Tiêu đề công việc'], ['slug', 'Slug (Tùy chọn)'], ['period', 'Thời gian (vd: 2024 - Hiện tại)'], ['role', 'Vai trò / Chức danh'], ['company', 'Công ty / Tổ chức'], ['summary', 'Tóm tắt công việc', 'rich'], ['content', 'Chi tiết công việc', 'rich'], ['technologies', 'Công nghệ (dấu phẩy phân cách)'], ['displayOrder', 'Thứ tự hiển thị', 'number'], ['published', 'Đã xuất bản', 'checkbox']] },
   comments: { title: 'Kiểm duyệt bình luận', load: getAdminComments, readonly: true },
   contacts: { title: 'Tin nhắn liên hệ', load: getAdminContacts, readonly: true },
@@ -39,11 +52,19 @@ export function AdminContentPage() {
   const { section } = useParams()
   const config = configs[section] || configs.projects
   const [items, setItems] = useState([])
+  const [categoriesList, setCategoriesList] = useState([])
   const [editing, setEditing] = useState(null)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('ALL')
   const [loading, setLoading] = useState(true)
   const toast = useToast()
+
+  // Load categories list for dropdown mapping
+  useEffect(() => {
+    getKnowledgeCategories()
+      .then(cats => setCategoriesList(Array.isArray(cats) ? cats : []))
+      .catch(() => setCategoriesList([]))
+  }, [])
 
   async function load() {
     setLoading(true)
@@ -87,6 +108,28 @@ export function AdminContentPage() {
       }
     })
   }, [items, search, categoryFilter, section])
+
+  function handleOpenCreate() {
+    if (config.single) {
+      setEditing(items[0] || {})
+    } else if (section === 'skills') {
+      setEditing({ category: SKILL_CATEGORIES[0], proficiency: 85, displayOrder: items.length + 1 })
+    } else if (section === 'articles') {
+      setEditing({
+        categoryId: categoriesList[0]?.id || 1,
+        title: '',
+        summary: '',
+        content: '',
+        thumbnailUrl: '',
+        status: 'PUBLISHED',
+        featured: false
+      })
+    } else if (section === 'work-items') {
+      setEditing({ published: true, displayOrder: items.length + 1, period: '', role: '', company: '', title: '', summary: '', content: '', technologies: '' })
+    } else {
+      setEditing({ published: true, displayOrder: items.length + 1 })
+    }
+  }
 
   async function save(e) {
     e.preventDefault()
@@ -137,7 +180,7 @@ export function AdminContentPage() {
           <h1>{config.title}</h1>
         </div>
         {!config.readonly && (
-          <button onClick={() => setEditing(config.single ? (items[0] || {}) : section === 'skills' ? { category: SKILL_CATEGORIES[0] } : { published: true, displayOrder: items.length + 1 })}>
+          <button onClick={handleOpenCreate}>
             <Plus /> {config.single ? 'Chỉnh sửa' : 'Thêm mới'}
           </button>
         )}
@@ -201,8 +244,17 @@ export function AdminContentPage() {
                   const itemTitle = renderCellText(item.title || item.name || item.fullName || item.displayName || item.subject) || 'Bản ghi'
                   const rawSub = item.slug || item.email || item.headline || (typeof item.content === 'string' ? item.content.replace(/<[^>]*>?/gm, '').slice(0, 80) : '')
                   const itemSub = renderCellText(rawSub)
-                  const itemInfo = renderCellText(item.category || item.company || item.type || item.technologies || item.location) || '—'
-                  const itemStatus = renderCellText(item.status) || 'ACTIVE'
+                  
+                  // For articles, resolve category name from categoryId
+                  let itemInfo = '—'
+                  if (section === 'articles' && item.categoryId) {
+                    const matchedCat = categoriesList.find(c => c.id === item.categoryId)
+                    itemInfo = matchedCat ? matchedCat.name : `Danh mục #${item.categoryId}`
+                  } else {
+                    itemInfo = renderCellText(item.category || item.company || item.type || item.technologies || item.location) || '—'
+                  }
+
+                  const itemStatus = renderCellText(item.status) || (item.published === false ? 'DRAFT' : 'ACTIVE')
 
                   return (
                     <tr key={item.id || index}>
@@ -269,10 +321,22 @@ export function AdminContentPage() {
               {config.fields.map(([key, label, type = 'text', options]) => (
                 <label className={type === 'rich' || type === 'textarea' ? 'wide' : ''} key={key}>
                   {type !== 'checkbox' && <span>{label}</span>}
-                  {type === 'rich' ? (
+                  
+                  {type === 'category_select' ? (
+                    <select
+                      value={editing.categoryId || (categoriesList[0]?.id ?? '')}
+                      onChange={e => setEditing({ ...editing, categoryId: Number(e.target.value) })}
+                    >
+                      {categoriesList.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : type === 'rich' ? (
                     <RichEditor value={editing[key]} onChange={value => setEditing({ ...editing, [key]: value })} />
                   ) : type === 'textarea' ? (
-                    <textarea rows="4" value={editing[key] || ''} onChange={e => setEditing({ ...editing, [key]: e.target.value })} />
+                    <textarea rows="3" value={editing[key] || ''} onChange={e => setEditing({ ...editing, [key]: e.target.value })} />
                   ) : type === 'select' ? (
                     <select value={editing[key] || options[0]} onChange={e => setEditing({ ...editing, [key]: e.target.value })}>
                       {options.map(o => <option key={o} value={o}>{o}</option>)}
