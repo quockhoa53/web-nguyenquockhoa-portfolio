@@ -278,6 +278,11 @@ export function PortfolioChatWidget() {
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
+                          table: ({ children, ...props }) => (
+                            <div className="chat-table-scroll-wrap">
+                              <table {...props}>{children}</table>
+                            </div>
+                          ),
                           a: ({ href, children, ...props }) => {
                             if (href && href.startsWith('/')) {
                               return (
