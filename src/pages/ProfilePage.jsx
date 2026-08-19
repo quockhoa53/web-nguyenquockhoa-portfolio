@@ -51,9 +51,18 @@ export function ProfilePage() {
                       <MapPin style={{ width: 16, height: 16 }} /> {profile.data.location}
                     </span>
                   )}
-                  <span>
-                    <GraduationCap style={{ width: 16, height: 16 }} /> Học viện Công nghệ Bưu chính Viễn thông (PTIT)
-                  </span>
+                  {profile.data?.education ? (
+                    <span>
+                      <GraduationCap style={{ width: 16, height: 16 }} />{' '}
+                      {typeof profile.data.education === 'object'
+                        ? profile.data.education.school || `${profile.data.education.degree || ''} ${profile.data.education.major || ''}`
+                        : profile.data.education}
+                    </span>
+                  ) : (
+                    <span>
+                      <GraduationCap style={{ width: 16, height: 16 }} /> Học viện Công nghệ Bưu chính Viễn thông (PTIT)
+                    </span>
+                  )}
                   <span className="avail-status">
                     <CheckCircle2 style={{ width: 16, height: 16, color: '#10b981' }} /> Sẵn sàng nhận dự án / cơ hội mới
                   </span>
