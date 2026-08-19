@@ -2,7 +2,7 @@ import { Check, Edit3, Plus, Search, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useToast } from '../components/common/ToastContext'
-import { createAdminItem, deleteAdminItem, getAdminArticles, getAdminComments, getAdminContacts, getAdminGuests, getAdminLikes, getAdminWorkItems, moderateComment, updateAdminItem, updateProfile } from '../services/adminApi'
+import { createAdminItem, deleteAdminItem, getAdminAiFacts, getAdminArticles, getAdminComments, getAdminContacts, getAdminGuests, getAdminLikes, getAdminWorkItems, moderateComment, updateAdminItem, updateProfile } from '../services/adminApi'
 import { getExperiences, getKnowledgeCategories, getProfile, getProjects, getSkills } from '../services/portfolioApi'
 import { RichEditor } from './RichEditor'
 
@@ -11,6 +11,15 @@ const SKILL_CATEGORIES = [
   'Database',
   'Data Processing',
   'AI & Tools'
+]
+
+const AI_FACT_CATEGORIES = [
+  'Đời tư & Mối quan hệ',
+  'Sở thích & Đời sống cá nhân',
+  'Giải thưởng & Thành tựu',
+  'Quan điểm & Phong cách làm việc',
+  'Thú cưng & Gia đình',
+  'Khác'
 ]
 
 const configs = {
@@ -35,6 +44,18 @@ const configs = {
     ]
   },
   'work-items': { title: 'Quá trình làm việc', load: getAdminWorkItems, resource: 'work-items', fields: [['title', 'Tiêu đề công việc'], ['slug', 'Slug (Tùy chọn)'], ['period', 'Thời gian (vd: 2024 - Hiện tại)'], ['role', 'Vai trò / Chức danh'], ['company', 'Công ty / Tổ chức'], ['summary', 'Tóm tắt công việc', 'rich'], ['content', 'Chi tiết công việc', 'rich'], ['technologies', 'Công nghệ (dấu phẩy phân cách)'], ['displayOrder', 'Thứ tự hiển thị', 'number'], ['published', 'Đã xuất bản', 'checkbox']] },
+  'ai-facts': {
+    title: 'Bộ nhớ AI & Thông tin bổ sung',
+    load: getAdminAiFacts,
+    resource: 'ai-facts',
+    fields: [
+      ['category', 'Phân loại chủ đề', 'select', AI_FACT_CATEGORIES],
+      ['title', 'Tiêu đề / Chủ đề (Ví dụ: Người yêu, Sở thích, Thần tượng...)'],
+      ['content', 'Nội dung chi tiết cung cấp cho AI', 'textarea'],
+      ['displayOrder', 'Thứ tự ưu tiên', 'number'],
+      ['isActive', 'Kích hoạt cho AI', 'checkbox']
+    ]
+  },
   comments: { title: 'Kiểm duyệt bình luận', load: getAdminComments, readonly: true },
   contacts: { title: 'Tin nhắn liên hệ', load: getAdminContacts, readonly: true },
   guests: { title: 'Khách truy cập', load: getAdminGuests, readonly: true }

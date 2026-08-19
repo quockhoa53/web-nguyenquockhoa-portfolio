@@ -14,6 +14,7 @@ const links = [
   ['categories', 'Danh mục', BookOpen],
   ['articles', 'Kiến thức', BookOpen],
   ['work-items', 'Quá trình làm việc', Route],
+  ['ai-facts', 'Bộ nhớ AI', Sparkles],
   ['comments', 'Bình luận', MessageSquare],
   ['likes', 'Lượt yêu thích', Heart],
   ['contacts', 'Liên hệ', Mail],
