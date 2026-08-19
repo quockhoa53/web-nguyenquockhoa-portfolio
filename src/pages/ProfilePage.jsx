@@ -4,6 +4,26 @@ import { LinesSkeleton } from '../components/common/Skeletons'
 import { useApiResource } from '../hooks/useApiResource'
 import { getExperiences, getProfile, getSkills } from '../services/portfolioApi'
 
+function formatSchoolName(edu) {
+  if (!edu) return 'Học viện Công nghệ Bưu chính Viễn thông (PTIT)'
+  if (typeof edu === 'object') {
+    return edu.school || edu.university || edu.name || `${edu.degree || ''} ${edu.major || ''}`.trim() || 'Học viện Công nghệ Bưu chính Viễn thông (PTIT)'
+  }
+  if (typeof edu === 'string') {
+    const trimmed = edu.trim()
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return parsed.school || parsed.university || parsed.name || `${parsed.degree || ''} ${parsed.major || ''}`.trim() || trimmed
+      } catch (e) {
+        return trimmed
+      }
+    }
+    return trimmed
+  }
+  return String(edu)
+}
+
 export function ProfilePage() {
   const profile = useApiResource(getProfile)
   const skills = useApiResource(getSkills)
@@ -51,18 +71,9 @@ export function ProfilePage() {
                       <MapPin style={{ width: 16, height: 16 }} /> {profile.data.location}
                     </span>
                   )}
-                  {profile.data?.education ? (
-                    <span>
-                      <GraduationCap style={{ width: 16, height: 16 }} />{' '}
-                      {typeof profile.data.education === 'object'
-                        ? profile.data.education.school || `${profile.data.education.degree || ''} ${profile.data.education.major || ''}`
-                        : profile.data.education}
-                    </span>
-                  ) : (
-                    <span>
-                      <GraduationCap style={{ width: 16, height: 16 }} /> Học viện Công nghệ Bưu chính Viễn thông (PTIT)
-                    </span>
-                  )}
+                  <span>
+                    <GraduationCap style={{ width: 16, height: 16 }} /> {formatSchoolName(profile.data?.education)}
+                  </span>
                   <span className="avail-status">
                     <CheckCircle2 style={{ width: 16, height: 16, color: '#10b981' }} /> Sẵn sàng nhận dự án / cơ hội mới
                   </span>
