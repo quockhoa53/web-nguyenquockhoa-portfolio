@@ -17,6 +17,7 @@ import { ProjectChatCard } from './ProjectChatCard'
 import { ArticleChatCard } from './ArticleChatCard'
 import { ContactChatCard } from './ContactChatCard'
 import { ResumeChatCard } from './ResumeChatCard'
+import { ContactConfirmChatCard } from './ContactConfirmChatCard'
 
 const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
 
@@ -26,6 +27,21 @@ const DEFAULT_SUGGESTIONS = [
   'Khoa sử dụng những công nghệ Backend & AI nào?',
   'Làm thế nào để liên hệ và hợp tác với Khoa?'
 ]
+
+function parseContactConfirm(content) {
+  if (!content || typeof content !== 'string') return { text: content, contactData: null }
+  const match = content.match(/\[ACTION_CONFIRM_CONTACT:(\{.*?\})\]/)
+  if (match) {
+    try {
+      const contactData = JSON.parse(match[1])
+      const cleanText = content.replace(match[0], '').trim()
+      return { text: cleanText, contactData }
+    } catch (e) {
+      return { text: content, contactData: null }
+    }
+  }
+  return { text: content, contactData: null }
+}
 
 export function PortfolioChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
@@ -305,121 +321,153 @@ export function PortfolioChatWidget() {
                 )}
 
                 <div className={`chat-bubble ${m.role === 'user' ? 'bubble-user' : 'bubble-bot'}`}>
-                  {m.content ? (
-                    <div className="chat-markdown-renderer">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          table: ({ children, ...props }) => (
-                            <div className="chat-table-scroll-wrap">
-                              <table {...props}>{children}</table>
-                            </div>
-                          ),
-                          a: ({ href, children, ...props }) => {
-                            if (!href) return <span>{children}</span>
+                  {m.content ? (() => {
+                    const { text, contactData } = parseContactConfirm(m.content)
+                    return (
+                      <>
+                        {text && (
+                          <div className="chat-markdown-renderer">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                table: ({ children, ...props }) => (
+                                  <div className="chat-table-scroll-wrap">
+                                    <table {...props}>{children}</table>
+                                  </div>
+                                ),
+                                a: ({ href, children, ...props }) => {
+                                  if (!href) return <span>{children}</span>
 
-                            // Normalize path (handle both full URLs and relative paths)
-                            let path = href
-                            if (path.includes('nguyenquockhoaportfolio.vercel.app')) {
-                              path = path.replace(/https?:\/\/nguyenquockhoaportfolio\.vercel\.app/, '')
-                            }
+                                  // Normalize path (handle both full URLs and relative paths)
+                                  let path = href
+                                  if (path.includes('nguyenquockhoaportfolio.vercel.app')) {
+                                    path = path.replace(/https?:\/\/nguyenquockhoaportfolio\.vercel\.app/, '')
+                                  }
 
-                            // 1. Match Project Card: /projects/:id
-                            const projectMatch = path.match(/^\/projects\/(\d+)/)
-                            if (projectMatch) {
-                              const projectId = Number(projectMatch[1])
-                              const foundProject = projectsList.find(p => p.id === projectId)
-                              if (foundProject) {
-                                return (
-                                  <ProjectChatCard
-                                    project={foundProject}
-                                    onNavigate={() => {
-                                      if (window.innerWidth < 768) setIsOpen(false)
-                                    }}
-                                  />
-                                )
-                              }
-                            }
+                                  // 1. Match Project Card: /projects/:id
+                                  const projectMatch = path.match(/^\/projects\/(\d+)/)
+                                  if (projectMatch) {
+                                    const projectId = Number(projectMatch[1])
+                                    const foundProject = projectsList.find(p => p.id === projectId)
+                                    if (foundProject) {
+                                      return (
+                                        <ProjectChatCard
+                                          project={foundProject}
+                                          onNavigate={() => {
+                                            if (window.innerWidth < 768) setIsOpen(false)
+                                          }}
+                                        />
+                                      )
+                                    }
+                                  }
 
-                            // 2. Match Knowledge Article Card: /knowledge/:slug
-                            const articleMatch = path.match(/^\/knowledge\/([^/?#]+)/)
-                            if (articleMatch) {
-                              const articleSlug = articleMatch[1]
-                              const foundArticle = articlesList.find(a => a.slug === articleSlug)
-                              if (foundArticle) {
-                                return (
-                                  <ArticleChatCard
-                                    article={foundArticle}
-                                    onNavigate={() => {
-                                      if (window.innerWidth < 768) setIsOpen(false)
-                                    }}
-                                  />
-                                )
-                              }
-                            }
+                                  // 2. Match Knowledge Article Card: /knowledge/:slug
+                                  const articleMatch = path.match(/^\/knowledge\/([^/?#]+)/)
+                                  if (articleMatch) {
+                                    const articleSlug = articleMatch[1]
+                                    const foundArticle = articlesList.find(a => a.slug === articleSlug)
+                                    if (foundArticle) {
+                                      return (
+                                        <ArticleChatCard
+                                          article={foundArticle}
+                                          onNavigate={() => {
+                                            if (window.innerWidth < 768) setIsOpen(false)
+                                          }}
+                                        />
+                                      )
+                                    }
+                                  }
 
-                            // 3. Match Contact Card: /contact
-                            if (path === '/contact' || path === '/contact/') {
-                              return (
-                                <ContactChatCard
-                                  onNavigate={() => {
-                                    if (window.innerWidth < 768) setIsOpen(false)
-                                  }}
-                                />
-                              )
-                            }
+                                  // 3. Match Contact Card: /contact
+                                  if (path === '/contact' || path === '/contact/') {
+                                    return (
+                                      <ContactChatCard
+                                        onNavigate={() => {
+                                          if (window.innerWidth < 768) setIsOpen(false)
+                                        }}
+                                      />
+                                    )
+                                  }
 
-                            // 4. Match Resume Card: /resumes/:id or /resumes/download or /resumes
-                            const resumeMatch = path.match(/^\/resumes\/(\d+)/) || path.match(/^\/api\/v1\/resumes\/(\d+)/)
-                            if (resumeMatch) {
-                              const resumeId = Number(resumeMatch[1])
-                              const foundResume = resumesList.find(r => r.id === resumeId)
-                              if (foundResume) {
-                                return <ResumeChatCard resume={foundResume} />
-                              }
-                            }
-                            if (path === '/resumes' || path === '/cv' || path === '/resume' || path.startsWith('/resumes')) {
-                              const primaryResume = resumesList.find(r => r.isPrimary) || resumesList[0]
-                              if (primaryResume) {
-                                return <ResumeChatCard resume={primaryResume} />
-                              }
-                            }
+                                  // 4. Match Resume Card: /resumes/:id or /resumes/download or /resumes
+                                  const resumeMatch = path.match(/^\/resumes\/(\d+)/) || path.match(/^\/api\/v1\/resumes\/(\d+)/)
+                                  if (resumeMatch) {
+                                    const resumeId = Number(resumeMatch[1])
+                                    const foundResume = resumesList.find(r => r.id === resumeId)
+                                    if (foundResume) {
+                                      return <ResumeChatCard resume={foundResume} />
+                                    }
+                                  }
+                                  if (path === '/resumes' || path === '/cv' || path === '/resume' || path.startsWith('/resumes')) {
+                                    const primaryResume = resumesList.find(r => r.isPrimary) || resumesList[0]
+                                    if (primaryResume) {
+                                      return <ResumeChatCard resume={primaryResume} />
+                                    }
+                                  }
 
-                            // Normal internal link
-                            if (path.startsWith('/')) {
-                              return (
-                                <Link
-                                  to={path}
-                                  className="chat-link-internal"
-                                  onClick={() => {
-                                    if (window.innerWidth < 768) setIsOpen(false)
-                                  }}
-                                  {...props}
-                                >
-                                  {children}
-                                </Link>
-                              )
-                            }
+                                  // 5. Match Contact Confirmation Card
+                                  if (path.startsWith('#confirm-contact') || href.startsWith('#confirm-contact') || href.includes('confirm-contact?')) {
+                                    try {
+                                      const searchStr = href.includes('?') ? href.split('?')[1] : ''
+                                      const params = new URLSearchParams(searchStr)
+                                      return (
+                                        <ContactConfirmChatCard
+                                          data={{
+                                            name: params.get('name') || '',
+                                            email: params.get('email') || '',
+                                            subject: params.get('subject') || '',
+                                            message: params.get('message') || ''
+                                          }}
+                                        />
+                                      )
+                                    } catch (e) {
+                                      return <span>{children}</span>
+                                    }
+                                  }
 
-                            // External link
-                            return (
-                              <a
-                                href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="chat-link-external"
-                                {...props}
-                              >
-                                {children}
-                              </a>
-                            )
-                          }
-                        }}
-                      >
-                        {m.content}
-                      </ReactMarkdown>
-                    </div>
-                  ) : (
+                                  // Normal internal link
+                                  if (path.startsWith('/')) {
+                                    return (
+                                      <Link
+                                        to={path}
+                                        className="chat-link-internal"
+                                        onClick={() => {
+                                          if (window.innerWidth < 768) setIsOpen(false)
+                                        }}
+                                        {...props}
+                                      >
+                                        {children}
+                                      </Link>
+                                    )
+                                  }
+
+                                  // External link
+                                  return (
+                                    <a
+                                      href={href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="chat-link-external"
+                                      {...props}
+                                    >
+                                      {children}
+                                    </a>
+                                  )
+                                }
+                              }}
+                            >
+                              {text}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                        {contactData && (
+                          <div style={{ marginTop: text ? 10 : 0 }}>
+                            <ContactConfirmChatCard data={contactData} />
+                          </div>
+                        )}
+                      </>
+                    )
+                  })() : (
                     <div className="typing-dots">
                       <span />
                       <span />
