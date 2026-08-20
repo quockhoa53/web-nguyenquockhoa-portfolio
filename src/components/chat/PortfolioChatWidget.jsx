@@ -12,6 +12,10 @@ import {
   Maximize2,
   Minimize2
 } from 'lucide-react'
+import { getProjects, getKnowledgeArticles } from '../../services/portfolioApi'
+import { ProjectChatCard } from './ProjectChatCard'
+import { ArticleChatCard } from './ArticleChatCard'
+import { ContactChatCard } from './ContactChatCard'
 
 const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
 
@@ -36,8 +40,27 @@ export function PortfolioChatWidget() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(true)
+  const [projectsList, setProjectsList] = useState([])
+  const [articlesList, setArticlesList] = useState([])
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+
+  // Fetch projects and articles for Generative UI Cards
+  useEffect(() => {
+    getProjects()
+      .then(res => {
+        const data = res?.data || res
+        if (Array.isArray(data)) setProjectsList(data)
+      })
+      .catch(() => {})
+
+    getKnowledgeArticles()
+      .then(res => {
+        const data = res?.data || res
+        if (Array.isArray(data)) setArticlesList(data)
+      })
+      .catch(() => {})
+  }, [])
 
   // Auto scroll to latest message
   useEffect(() => {
@@ -284,10 +307,64 @@ export function PortfolioChatWidget() {
                             </div>
                           ),
                           a: ({ href, children, ...props }) => {
-                            if (href && href.startsWith('/')) {
+                            if (!href) return <span>{children}</span>
+
+                            // Normalize path (handle both full URLs and relative paths)
+                            let path = href
+                            if (path.includes('nguyenquockhoaportfolio.vercel.app')) {
+                              path = path.replace(/https?:\/\/nguyenquockhoaportfolio\.vercel\.app/, '')
+                            }
+
+                            // 1. Match Project Card: /projects/:id
+                            const projectMatch = path.match(/^\/projects\/(\d+)/)
+                            if (projectMatch) {
+                              const projectId = Number(projectMatch[1])
+                              const foundProject = projectsList.find(p => p.id === projectId)
+                              if (foundProject) {
+                                return (
+                                  <ProjectChatCard
+                                    project={foundProject}
+                                    onNavigate={() => {
+                                      if (window.innerWidth < 768) setIsOpen(false)
+                                    }}
+                                  />
+                                )
+                              }
+                            }
+
+                            // 2. Match Knowledge Article Card: /knowledge/:slug
+                            const articleMatch = path.match(/^\/knowledge\/([^/?#]+)/)
+                            if (articleMatch) {
+                              const articleSlug = articleMatch[1]
+                              const foundArticle = articlesList.find(a => a.slug === articleSlug)
+                              if (foundArticle) {
+                                return (
+                                  <ArticleChatCard
+                                    article={foundArticle}
+                                    onNavigate={() => {
+                                      if (window.innerWidth < 768) setIsOpen(false)
+                                    }}
+                                  />
+                                )
+                              }
+                            }
+
+                            // 3. Match Contact Card: /contact
+                            if (path === '/contact' || path === '/contact/') {
+                              return (
+                                <ContactChatCard
+                                  onNavigate={() => {
+                                    if (window.innerWidth < 768) setIsOpen(false)
+                                  }}
+                                />
+                              )
+                            }
+
+                            // Normal internal link
+                            if (path.startsWith('/')) {
                               return (
                                 <Link
-                                  to={href}
+                                  to={path}
                                   className="chat-link-internal"
                                   onClick={() => {
                                     if (window.innerWidth < 768) setIsOpen(false)
@@ -298,6 +375,8 @@ export function PortfolioChatWidget() {
                                 </Link>
                               )
                             }
+
+                            // External link
                             return (
                               <a
                                 href={href}
