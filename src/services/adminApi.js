@@ -49,3 +49,20 @@ export const deleteAdminUser = (id) => request(`/admin/users/${id}`, { method: '
 export const getAllowedIps = () => request('/admin/allowed-ips')
 export const createAllowedIp = (data) => request('/admin/allowed-ips', json('POST', data))
 export const deleteAllowedIp = (id) => request(`/admin/allowed-ips/${id}`, { method: 'DELETE' })
+
+// Resumes (CV) Management & Cloudinary Upload
+export const getAdminResumes = () => request('/admin/resumes')
+export const createAdminResume = (data) => request('/admin/resumes', json('POST', data))
+export const updateAdminResume = (id, data) => request(`/admin/resumes/${id}`, json('PUT', data))
+export const deleteAdminResume = (id) => request(`/admin/resumes/${id}`, { method: 'DELETE' })
+export const setPrimaryResume = (id) => request(`/admin/resumes/${id}/primary`, { method: 'PUT' })
+
+export const uploadFileToCloudinary = async (file, folder = 'portfolio/resumes') => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('folder', folder)
+  return request('/admin/uploads', {
+    method: 'POST',
+    body: formData,
+  })
+}

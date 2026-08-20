@@ -12,10 +12,11 @@ import {
   Maximize2,
   Minimize2
 } from 'lucide-react'
-import { getProjects, getKnowledgeArticles } from '../../services/portfolioApi'
+import { getProjects, getKnowledgeArticles, getResumes } from '../../services/portfolioApi'
 import { ProjectChatCard } from './ProjectChatCard'
 import { ArticleChatCard } from './ArticleChatCard'
 import { ContactChatCard } from './ContactChatCard'
+import { ResumeChatCard } from './ResumeChatCard'
 
 const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
 
@@ -42,10 +43,11 @@ export function PortfolioChatWidget() {
   const [showTooltip, setShowTooltip] = useState(true)
   const [projectsList, setProjectsList] = useState([])
   const [articlesList, setArticlesList] = useState([])
+  const [resumesList, setResumesList] = useState([])
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
-  // Fetch projects and articles for Generative UI Cards
+  // Fetch projects, articles and resumes for Generative UI Cards
   useEffect(() => {
     getProjects()
       .then(res => {
@@ -58,6 +60,13 @@ export function PortfolioChatWidget() {
       .then(res => {
         const data = res?.data || res
         if (Array.isArray(data)) setArticlesList(data)
+      })
+      .catch(() => {})
+
+    getResumes()
+      .then(res => {
+        const data = res?.data || res
+        if (Array.isArray(data)) setResumesList(data)
       })
       .catch(() => {})
   }, [])
@@ -358,6 +367,22 @@ export function PortfolioChatWidget() {
                                   }}
                                 />
                               )
+                            }
+
+                            // 4. Match Resume Card: /resumes/:id or /resumes/download or /resumes
+                            const resumeMatch = path.match(/^\/resumes\/(\d+)/) || path.match(/^\/api\/v1\/resumes\/(\d+)/)
+                            if (resumeMatch) {
+                              const resumeId = Number(resumeMatch[1])
+                              const foundResume = resumesList.find(r => r.id === resumeId)
+                              if (foundResume) {
+                                return <ResumeChatCard resume={foundResume} />
+                              }
+                            }
+                            if (path === '/resumes' || path === '/cv' || path === '/resume' || path.startsWith('/resumes')) {
+                              const primaryResume = resumesList.find(r => r.isPrimary) || resumesList[0]
+                              if (primaryResume) {
+                                return <ResumeChatCard resume={primaryResume} />
+                              }
                             }
 
                             // Normal internal link

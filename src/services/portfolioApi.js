@@ -30,3 +30,8 @@ export const sendContact = (data) => request('/contact', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(data),
 })
+
+// Public Resumes & Download
+export const getResumes = () => request('/resumes')
+export const getPrimaryResume = () => request('/resumes/primary')
+export const recordResumeDownload = (id) => request(`/resumes/${id}/download`, { method: 'POST' })

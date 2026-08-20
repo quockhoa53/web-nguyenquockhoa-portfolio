@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, BookOpen, BriefcaseBusiness, ExternalLink, FolderKanban, Heart, LogOut, Mail, MessageSquare, Route, ShieldCheck, Sparkles, UserRound, Users } from 'lucide-react'
+import { BarChart3, BookOpen, BriefcaseBusiness, ExternalLink, FileText, FolderKanban, Heart, LogOut, Mail, MessageSquare, Route, ShieldCheck, Sparkles, UserRound, Users } from 'lucide-react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { adminLogout, adminMe } from '../services/adminApi'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
@@ -7,6 +7,7 @@ import { ErrorBoundary } from '../components/common/ErrorBoundary'
 const links = [
   ['', 'Dashboard', BarChart3],
   ['users', 'Quản trị viên', ShieldCheck],
+  ['resumes', 'Quản lý CV & Cloud', FileText],
   ['profile', 'Profile', UserRound],
   ['skills', 'Năng lực kỹ thuật', BriefcaseBusiness],
   ['experiences', 'Kinh nghiệm', Route],
