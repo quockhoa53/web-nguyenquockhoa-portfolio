@@ -114,7 +114,7 @@ export function AdminContentPage() {
     if (!Array.isArray(items)) return []
     return items.filter(item => {
       if (!item || typeof item !== 'object') return false
-      
+
       // Filter by category for skills
       if (section === 'skills' && categoryFilter !== 'ALL') {
         if (item.category !== categoryFilter) return false
@@ -265,7 +265,7 @@ export function AdminContentPage() {
                   const itemTitle = renderCellText(item.title || item.name || item.fullName || item.displayName || item.subject) || 'Bản ghi'
                   const rawSub = item.slug || item.email || item.headline || (typeof item.content === 'string' ? item.content.replace(/<[^>]*>?/gm, '').slice(0, 80) : '')
                   const itemSub = renderCellText(rawSub)
-                  
+
                   // For articles, resolve category name from categoryId
                   let itemInfo = '—'
                   if (section === 'articles' && item.categoryId) {
@@ -342,7 +342,7 @@ export function AdminContentPage() {
               {config.fields.map(([key, label, type = 'text', options]) => (
                 <label className={type === 'rich' || type === 'textarea' ? 'wide' : ''} key={key}>
                   {type !== 'checkbox' && <span>{label}</span>}
-                  
+
                   {type === 'category_select' ? (
                     <select
                       value={editing.categoryId || (categoriesList[0]?.id ?? '')}
