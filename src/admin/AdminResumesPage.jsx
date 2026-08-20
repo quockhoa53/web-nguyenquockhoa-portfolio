@@ -9,12 +9,10 @@ import {
   Edit2,
   ExternalLink,
   Search,
-  CheckCircle2,
+  Check,
   Loader2,
   X,
-  FileCheck,
-  Layers,
-  Sparkles
+  Layers
 } from 'lucide-react'
 import {
   getAdminResumes,
@@ -170,7 +168,7 @@ export function AdminResumesPage() {
           <span>RESUME &amp; CLOUDINARY STORAGE</span>
           <h1>Quản lý CV &amp; Lưu trữ Cloud</h1>
         </div>
-        <button onClick={handleOpenCreate}>
+        <button type="button" onClick={handleOpenCreate}>
           <Plus /> Thêm CV mới
         </button>
       </div>
@@ -240,11 +238,11 @@ export function AdminResumesPage() {
                         )}
                       </td>
                       <td>
-                        <div style={{ fontWeight: 700, color: 'var(--text, #0f172a)' }}>{r.title}</div>
+                        <b style={{ color: '#0f172a' }}>{r.title}</b>
                         {r.summary && (
-                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: 2, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <small style={{ color: '#64748b', marginTop: 2, maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {r.summary}
-                          </div>
+                          </small>
                         )}
                       </td>
                       <td>
@@ -274,44 +272,46 @@ export function AdminResumesPage() {
                         </span>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        {r.isActive ? (
-                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#16a34a', background: 'rgba(22, 163, 74, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
-                            Hiển thị
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
-                            Ẩn
-                          </span>
-                        )}
+                        <span className={`status ${r.isActive ? 'status-active' : 'status-draft'}`}>
+                          {r.isActive ? 'Hiển thị' : 'Ẩn'}
+                        </span>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                      <td>
+                        <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
                           {r.fileUrl && (
                             <a
                               href={r.fileUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               title="Xem file trên Cloudinary"
-                              style={{ color: '#0284c7', display: 'inline-flex', alignItems: 'center', padding: 4 }}
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 8,
+                                border: '1px solid #cbd5e1',
+                                background: '#ffffff',
+                                color: '#0284c7',
+                                display: 'grid',
+                                placeItems: 'center'
+                              }}
                             >
-                              <ExternalLink size={15} />
+                              <ExternalLink size={14} />
                             </a>
                           )}
                           <button
                             type="button"
                             onClick={() => setEditing(r)}
-                            title="Sửa"
-                            style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}
+                            title="Chỉnh sửa"
                           >
-                            <Edit2 size={15} />
+                            <Edit2 size={14} />
                           </button>
                           <button
                             type="button"
+                            className="danger"
                             onClick={() => handleDelete(r)}
                             title="Xóa"
-                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4 }}
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -333,174 +333,127 @@ export function AdminResumesPage() {
         onChange={handleFileUpload}
       />
 
-      {/* Create / Edit Drawer Modal */}
+      {/* Standard Admin Modal */}
       {editing && (
-        <div className="admin-modal-overlay" onClick={() => setEditing(null)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 580 }}>
-            <div className="admin-modal-head">
-              <h2>{editing.id ? 'Chỉnh sửa bản CV' : 'Tạo mới bản CV'}</h2>
-              <button onClick={() => setEditing(null)}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="admin-modal" onClick={() => setEditing(null)}>
+          <form onSubmit={handleSave} onClick={e => e.stopPropagation()}>
+            <header>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#334155' }}>
-                  Tiêu đề CV *
-                </label>
+                <span>CV &amp; RESUME EDITOR</span>
+                <h2>{editing.id ? 'Cập nhật' : 'Thêm mới'} bản CV</h2>
+              </div>
+              <button type="button" onClick={() => setEditing(null)}>
+                <X />
+              </button>
+            </header>
+
+            <div className="admin-form-grid">
+              <label className="wide">
+                <span>Tiêu đề CV *</span>
                 <input
                   type="text"
                   placeholder="Ví dụ: Nguyễn Quốc Khoa - Java Backend Engineer CV"
                   value={editing.title || ''}
                   onChange={e => setEditing({ ...editing, title: e.target.value })}
-                  style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 12px', fontSize: 13.5 }}
                   required
                 />
-              </div>
+              </label>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#334155' }}>
-                    Chuyên môn (Target Role)
-                  </label>
-                  <select
-                    value={editing.targetRole || 'BACKEND'}
-                    onChange={e => setEditing({ ...editing, targetRole: e.target.value })}
-                    style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 12px', fontSize: 13.5, background: '#fff' }}
-                  >
-                    {ROLE_OPTIONS.map(ro => (
-                      <option key={ro.value} value={ro.value}>{ro.label}</option>
-                    ))}
-                  </select>
-                </div>
+              <label>
+                <span>Chuyên môn (Target Role)</span>
+                <select
+                  value={editing.targetRole || 'BACKEND'}
+                  onChange={e => setEditing({ ...editing, targetRole: e.target.value })}
+                >
+                  {ROLE_OPTIONS.map(ro => (
+                    <option key={ro.value} value={ro.value}>{ro.label}</option>
+                  ))}
+                </select>
+              </label>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#334155' }}>
-                    Tên File (File Name)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="NguyenQuocKhoa_CV.pdf"
-                    value={editing.fileName || ''}
-                    onChange={e => setEditing({ ...editing, fileName: e.target.value })}
-                    style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 12px', fontSize: 13.5 }}
-                  />
-                </div>
-              </div>
+              <label>
+                <span>Tên File (File Name)</span>
+                <input
+                  type="text"
+                  placeholder="NguyenQuocKhoa_CV.pdf"
+                  value={editing.fileName || ''}
+                  onChange={e => setEditing({ ...editing, fileName: e.target.value })}
+                />
+              </label>
 
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#334155' }}>
-                  Link File PDF / Cloudinary URL *
-                </label>
-                <div style={{ display: 'flex', gap: 8 }}>
+              <label className="wide">
+                <span>Link File PDF / Cloudinary URL *</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="url"
                     placeholder="https://res.cloudinary.com/..."
                     value={editing.fileUrl || ''}
                     onChange={e => setEditing({ ...editing, fileUrl: e.target.value })}
-                    style={{ flex: 1, border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 12px', fontSize: 13.5 }}
+                    style={{ flex: 1 }}
                     required
                   />
                   <button
                     type="button"
+                    className="admin-btn-primary"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      background: '#06b6d4',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: 8,
-                      padding: '0 14px',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: uploading ? 'not-allowed' : 'pointer'
-                    }}
+                    style={{ flexShrink: 0 }}
                   >
                     {uploading ? (
                       <>
-                        <Loader2 size={15} className="animate-spin" /> Đang tải...
+                        <Loader2 size={14} className="animate-spin" /> Đang tải...
                       </>
                     ) : (
                       <>
-                        <UploadCloud size={15} /> Upload Cloud
+                        <UploadCloud size={14} /> Upload Cloud
                       </>
                     )}
                   </button>
                 </div>
-              </div>
+              </label>
 
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 6, color: '#334155' }}>
-                  Tóm tắt điểm nhấn cho AI đọc &amp; tư vấn
-                </label>
+              <label className="wide">
+                <span>Tóm tắt điểm nhấn cho AI đọc &amp; tư vấn</span>
                 <textarea
                   rows={3}
                   placeholder="Ví dụ: 3+ năm kinh nghiệm Java/Spring Boot, Clean Architecture, Microservices, Kafka, PostgreSQL, tối ưu hiệu năng..."
                   value={editing.summary || ''}
                   onChange={e => setEditing({ ...editing, summary: e.target.value })}
-                  style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: 8, padding: '9px 12px', fontSize: 13.5, resize: 'vertical' }}
                 />
-              </div>
+              </label>
 
-              <div style={{ display: 'flex', gap: 20, paddingTop: 4 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13.5 }}>
+              <label className="wide">
+                <span className="check-field">
                   <input
                     type="checkbox"
                     checked={editing.isPrimary || false}
                     onChange={e => setEditing({ ...editing, isPrimary: e.target.checked })}
                   />
-                  <span style={{ fontWeight: 700, color: '#334155' }}>⭐ Đặt làm CV chính</span>
-                </label>
+                  ⭐ Đặt làm CV chính (Primary CV)
+                </span>
+              </label>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13.5 }}>
+              <label className="wide">
+                <span className="check-field">
                   <input
                     type="checkbox"
                     checked={editing.isActive !== false}
                     onChange={e => setEditing({ ...editing, isActive: e.target.checked })}
                   />
-                  <span style={{ color: '#334155' }}>Hiển thị công khai</span>
-                </label>
-              </div>
+                  Hiển thị công khai
+                </span>
+              </label>
+            </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12, paddingTop: 16, borderTop: '1px solid #e2e8f0' }}>
-                <button
-                  type="button"
-                  onClick={() => setEditing(null)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: '1px solid #cbd5e1',
-                    background: '#f8fafc',
-                    color: '#475569',
-                    fontSize: 13.5,
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-                    color: '#ffffff',
-                    fontSize: 13.5,
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {editing.id ? 'Lưu thay đổi' : 'Thêm mới CV'}
-                </button>
-              </div>
-            </form>
-          </div>
+            <footer>
+              <button type="button" onClick={() => setEditing(null)}>
+                Hủy
+              </button>
+              <button className="save" type="submit">
+                <Check /> {editing.id ? 'Lưu thay đổi' : 'Thêm mới CV'}
+              </button>
+            </footer>
+          </form>
         </div>
       )}
     </div>
