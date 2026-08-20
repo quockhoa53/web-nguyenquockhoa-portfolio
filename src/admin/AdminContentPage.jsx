@@ -1,8 +1,8 @@
-import { Check, Edit3, Plus, Search, Trash2, X } from 'lucide-react'
+import { Check, Edit3, Plus, Search, Trash2, X, Mail, Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useToast } from '../components/common/ToastContext'
-import { createAdminItem, deleteAdminItem, getAdminAiFacts, getAdminArticles, getAdminComments, getAdminContacts, getAdminGuests, getAdminLikes, getAdminWorkItems, moderateComment, updateAdminItem, updateProfile } from '../services/adminApi'
+import { createAdminItem, deleteAdminItem, getAdminAiFacts, getAdminArticles, getAdminComments, getAdminContacts, getAdminGuests, getAdminLikes, getAdminWorkItems, moderateComment, updateAdminItem, updateProfile, testSendEmail } from '../services/adminApi'
 import { getExperiences, getKnowledgeCategories, getProfile, getProjects, getSkills } from '../services/portfolioApi'
 import { RichEditor } from './RichEditor'
 
@@ -78,7 +78,20 @@ export function AdminContentPage() {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('ALL')
   const [loading, setLoading] = useState(true)
+  const [testingMail, setTestingMail] = useState(false)
   const toast = useToast()
+
+  async function handleTestMail() {
+    setTestingMail(true)
+    try {
+      const res = await testSendEmail()
+      toast.success(res?.message || 'Đã gửi email test thành công! Vui lòng kiểm tra hộp thư đến hoặc thư rác.')
+    } catch (err) {
+      toast.error('Lỗi khi gửi email test: ' + (err.message || 'Không thể gửi'))
+    } finally {
+      setTestingMail(false)
+    }
+  }
 
   // Load categories list for dropdown mapping
   useEffect(() => {
@@ -200,11 +213,36 @@ export function AdminContentPage() {
           <span>CONTENT MANAGEMENT</span>
           <h1>{config.title}</h1>
         </div>
-        {!config.readonly && (
-          <button onClick={handleOpenCreate}>
-            <Plus /> {config.single ? 'Chỉnh sửa' : 'Thêm mới'}
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {section === 'contacts' && (
+            <button
+              type="button"
+              disabled={testingMail}
+              onClick={handleTestMail}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'linear-gradient(135deg, #10b981, #06b6d4)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: testingMail ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {testingMail ? <Loader2 className="animate-spin" size={15} /> : <Mail size={15} />}
+              <span>{testingMail ? 'Đang gửi test...' : 'Test Gửi Email'}</span>
+            </button>
+          )}
+          {!config.readonly && (
+            <button onClick={handleOpenCreate}>
+              <Plus /> {config.single ? 'Chỉnh sửa' : 'Thêm mới'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="admin-toolbar">

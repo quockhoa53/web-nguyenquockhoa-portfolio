@@ -66,3 +66,7 @@ export const uploadFileToCloudinary = async (file, folder = 'portfolio/resumes')
     body: formData,
   })
 }
+
+// Mail Diagnostics & Testing
+export const testSendEmail = () => request('/admin/mail/test', { method: 'POST' })
+export const getMailStatus = () => request('/admin/mail/status')
