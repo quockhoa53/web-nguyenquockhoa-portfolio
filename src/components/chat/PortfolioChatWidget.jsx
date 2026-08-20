@@ -30,16 +30,32 @@ const DEFAULT_SUGGESTIONS = [
 
 function parseContactConfirm(content) {
   if (!content || typeof content !== 'string') return { text: content, contactData: null }
-  const match = content.match(/\[ACTION_CONFIRM_CONTACT:(\{.*?\})\]/)
-  if (match) {
-    try {
-      const contactData = JSON.parse(match[1])
-      const cleanText = content.replace(match[0], '').trim()
-      return { text: cleanText, contactData }
-    } catch (e) {
-      return { text: content, contactData: null }
+
+  const tagStart = content.indexOf('[ACTION_CONFIRM_CONTACT:')
+  if (tagStart !== -1) {
+    const jsonStart = tagStart + '[ACTION_CONFIRM_CONTACT:'.length
+    const jsonEnd = content.lastIndexOf('}]')
+    if (jsonEnd !== -1 && jsonEnd >= jsonStart) {
+      let rawJson = content.slice(jsonStart, jsonEnd + 1).trim()
+      // Clean any accidental markdown links inside JSON (e.g. [email](mailto:...))
+      rawJson = rawJson.replace(/\[([^\]]+)\]\(mailto:[^)]+\)/g, '$1')
+      try {
+        const contactData = JSON.parse(rawJson)
+        if (contactData.email) {
+          contactData.email = contactData.email.replace(/[\[\]]/g, '').replace(/\(mailto:[^)]+\)/g, '').trim()
+        }
+        if (!contactData.name || !contactData.name.trim()) {
+          contactData.name = 'Nhà tuyển dụng / Quý khách'
+        }
+        const fullTag = content.slice(tagStart, jsonEnd + 2)
+        const cleanText = content.replace(fullTag, '').trim()
+        return { text: cleanText, contactData }
+      } catch (e) {
+        console.warn('Failed to parse contact confirmation JSON:', e)
+      }
     }
   }
+
   return { text: content, contactData: null }
 }
 

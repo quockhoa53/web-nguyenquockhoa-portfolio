@@ -178,17 +178,17 @@ export function ContactConfirmChatCard({ data = {} }) {
           className="chat-card-btn btn-primary"
           onClick={handleSend}
           disabled={loading}
-          style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', flex: 1 }}
+          style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', flex: 1.3, justifyContent: 'center' }}
         >
           {loading ? (
             <>
               <Loader2 size={14} className="animate-spin" />
-              <span>Đang gửi tin...</span>
+              <span>Đang gửi thông tin...</span>
             </>
           ) : (
             <>
               <Send size={14} />
-              <span>Xác nhận &amp; Gửi ngay</span>
+              <span>Xác nhận thông tin</span>
             </>
           )}
         </button>
@@ -198,6 +198,7 @@ export function ContactConfirmChatCard({ data = {} }) {
           className="chat-card-btn btn-secondary"
           onClick={() => setCancelled(true)}
           disabled={loading}
+          style={{ flex: 0.7, justifyContent: 'center' }}
         >
           <X size={13} />
           <span>Hủy</span>
