@@ -290,8 +290,8 @@ export function PortfolioChatWidget() {
       }
       const utterance = new SpeechSynthesisUtterance(cleanText)
       utterance.lang = 'vi-VN'
-      utterance.rate = 1.18 // Fast, natural conversational pace
-      utterance.pitch = 1.05 // Friendly, engaging pitch
+      utterance.rate = 0.95 // Calm, natural and warm pace
+      utterance.pitch = 1.0
       utterance.onend = () => setSpeakingMessageId(null)
       utterance.onerror = () => setSpeakingMessageId(null)
       const voices = window.speechSynthesis.getVoices()
@@ -300,7 +300,7 @@ export function PortfolioChatWidget() {
       window.speechSynthesis.speak(utterance)
     }
 
-    // 2. Try ElevenLabs Neural Voice (Adam) via Chatbot API
+    // 2. Try Backend Neural TTS (Edge-TTS / ElevenLabs)
     try {
       const response = await fetch(`${CHATBOT_API}/api/tts`, {
         method: 'POST',
@@ -312,7 +312,7 @@ export function PortfolioChatWidget() {
         const audioBlob = await response.blob()
         const audioUrl = URL.createObjectURL(audioBlob)
         const audio = new Audio(audioUrl)
-        audio.playbackRate = 1.15 // Faster, punchy & energetic delivery
+        audio.playbackRate = 1.0 // Natural, expressive & calm pace
         audioPlayerRef.current = audio
 
         audio.onended = () => {
