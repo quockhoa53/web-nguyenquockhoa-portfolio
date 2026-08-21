@@ -224,6 +224,7 @@ export function PortfolioChatWidget() {
   const [isListening, setIsListening] = useState(false)
   const [speakingMessageId, setSpeakingMessageId] = useState(null)
   const recognitionRef = useRef(null)
+  const audioPlayerRef = useRef(null)
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -239,22 +240,99 @@ export function PortfolioChatWidget() {
     if (window.innerWidth < 768) setIsOpen(false)
   }, [])
 
-  // Text-to-Speech (TTS) handler
-  const handleSpeak = useCallback((text, messageId) => {
-    if (!('speechSynthesis' in window)) return;
+  // Text-to-Speech (TTS) handler with ElevenLabs Neural Adam Voice + Automatic Web Speech Fallback
+  const handleSpeak = useCallback(async (text, messageId) => {
+    // 1. If currently speaking this message, stop immediately
     if (speakingMessageId === messageId) {
-      window.speechSynthesis.cancel()
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause()
+        audioPlayerRef.current.currentTime = 0
+        audioPlayerRef.current = null
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
       setSpeakingMessageId(null)
       return
     }
-    window.speechSynthesis.cancel()
-    let cleanText = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/[*_#~>`]/g, '').trim()
+
+    // Stop any other playing audio
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause()
+      audioPlayerRef.current.currentTime = 0
+      audioPlayerRef.current = null
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+
+    // Clean text for speech
+    let cleanText = text
+      .replace(/<think>[\s\S]*?<\/think>/gi, '')
+      .replace(/```[\s\S]*?```/gi, '')
+      .replace(/`[^`]+`/g, '')
+      .replace(/\[ACTION_CONFIRM_CONTACT:[\s\S]*?\]/gi, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/[*_#~>`]/g, '')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+
     if (!cleanText) return
-    const utterance = new SpeechSynthesisUtterance(cleanText)
-    utterance.lang = 'vi-VN'
-    utterance.onend = () => setSpeakingMessageId(null)
+
     setSpeakingMessageId(messageId)
-    window.speechSynthesis.speak(utterance)
+
+    // Helper: Fallback to native Web Speech API
+    const fallbackToBrowserTTS = () => {
+      if (!('speechSynthesis' in window)) {
+        setSpeakingMessageId(null)
+        return
+      }
+      const utterance = new SpeechSynthesisUtterance(cleanText)
+      utterance.lang = 'vi-VN'
+      utterance.rate = 1.0
+      utterance.onend = () => setSpeakingMessageId(null)
+      utterance.onerror = () => setSpeakingMessageId(null)
+      const voices = window.speechSynthesis.getVoices()
+      const viVoice = voices.find(v => v.lang.includes('vi') || v.lang.includes('VN'))
+      if (viVoice) utterance.voice = viVoice
+      window.speechSynthesis.speak(utterance)
+    }
+
+    // 2. Try ElevenLabs Neural Voice (Adam) via Chatbot API
+    try {
+      const response = await fetch(`${CHATBOT_API}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: cleanText })
+      })
+
+      if (response.ok) {
+        const audioBlob = await response.blob()
+        const audioUrl = URL.createObjectURL(audioBlob)
+        const audio = new Audio(audioUrl)
+        audioPlayerRef.current = audio
+
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl)
+          audioPlayerRef.current = null
+          setSpeakingMessageId(null)
+        }
+
+        audio.onerror = () => {
+          URL.revokeObjectURL(audioUrl)
+          audioPlayerRef.current = null
+          fallbackToBrowserTTS()
+        }
+
+        await audio.play()
+      } else {
+        fallbackToBrowserTTS()
+      }
+    } catch (err) {
+      console.warn('ElevenLabs TTS failed, falling back to Web Speech API:', err)
+      fallbackToBrowserTTS()
+    }
   }, [speakingMessageId])
 
   // Speech-to-Text (STT) voice input handler
