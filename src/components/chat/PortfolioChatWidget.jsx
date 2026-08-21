@@ -31,12 +31,15 @@ const DEFAULT_SUGGESTIONS = [
 function parseContactConfirm(content) {
   if (!content || typeof content !== 'string') return { text: content, contactData: null }
 
-  const tagStart = content.indexOf('[ACTION_CONFIRM_CONTACT:')
+  // 1. Strip internal model thinking process (<think>...</think> and unclosed streaming <think>...)
+  let cleanContent = content.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<think>[\s\S]*$/gi, '').trim()
+
+  const tagStart = cleanContent.indexOf('[ACTION_CONFIRM_CONTACT:')
   if (tagStart !== -1) {
     const jsonStart = tagStart + '[ACTION_CONFIRM_CONTACT:'.length
-    const jsonEnd = content.lastIndexOf('}]')
+    const jsonEnd = cleanContent.lastIndexOf('}]')
     if (jsonEnd !== -1 && jsonEnd >= jsonStart) {
-      let rawJson = content.slice(jsonStart, jsonEnd + 1).trim()
+      let rawJson = cleanContent.slice(jsonStart, jsonEnd + 1).trim()
       // Clean any accidental markdown links inside JSON (e.g. [email](mailto:...))
       rawJson = rawJson.replace(/\[([^\]]+)\]\(mailto:[^)]+\)/g, '$1')
       try {
@@ -47,8 +50,8 @@ function parseContactConfirm(content) {
         if (!contactData.name || !contactData.name.trim()) {
           contactData.name = 'Nhà tuyển dụng / Quý khách'
         }
-        const fullTag = content.slice(tagStart, jsonEnd + 2)
-        const cleanText = content.replace(fullTag, '').trim()
+        const fullTag = cleanContent.slice(tagStart, jsonEnd + 2)
+        const cleanText = cleanContent.replace(fullTag, '').trim()
         return { text: cleanText, contactData }
       } catch (e) {
         console.warn('Failed to parse contact confirmation JSON:', e)
@@ -56,7 +59,7 @@ function parseContactConfirm(content) {
     }
   }
 
-  return { text: content, contactData: null }
+  return { text: cleanContent, contactData: null }
 }
 
 const ChatMessageItem = memo(function ChatMessageItem({
