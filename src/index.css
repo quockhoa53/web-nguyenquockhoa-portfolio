@@ -136,6 +136,29 @@ button {
   align-items: center;
   gap: 12px;
   margin-right: auto;
+  text-decoration: none;
+}
+
+.brand-logo-img {
+  height: 42px;
+  max-width: 160px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brand:hover .brand-logo-img {
+  transform: scale(1.04);
+}
+
+.footer-logo-img {
+  height: 44px;
+  max-width: 170px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  margin-bottom: 12px;
 }
 
 .brand-mark {

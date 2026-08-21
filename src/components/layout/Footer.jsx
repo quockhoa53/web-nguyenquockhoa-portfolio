@@ -21,9 +21,9 @@ export function Footer() {
     <footer className="site-footer">
       <div className="footer-grid">
         <div>
-          <div className="footer-brand">
-            NQK<span>Portfolio</span>
-          </div>
+          <Link to="/" className="footer-brand" title="Trang chủ">
+            <img src="/logo.png" alt="NQK Logo" className="footer-logo-img" />
+          </Link>
           <p>
             Cảm ơn bạn đã ghé thăm portfolio. Hãy kết nối nếu bạn có dự án thú vị hoặc cơ hội muốn hợp tác!
           </p>
