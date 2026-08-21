@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { Mail, MessageSquare, ArrowRight, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-export function ContactChatCard({ onNavigate }) {
+export const ContactChatCard = memo(function ContactChatCard({ onNavigate }) {
   return (
     <div className="chat-generative-card chat-contact-card">
       <div className="chat-card-header">
@@ -40,4 +41,4 @@ export function ContactChatCard({ onNavigate }) {
       </div>
     </div>
   )
-}
+})

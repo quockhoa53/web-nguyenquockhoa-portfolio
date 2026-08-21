@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { Send, CheckCircle2, X, AlertCircle, Loader2, Mail, User, Tag, MessageSquare, Edit3 } from 'lucide-react'
 import { sendContact } from '../../services/portfolioApi'
 
-export function ContactConfirmChatCard({ data = {} }) {
+export const ContactConfirmChatCard = memo(function ContactConfirmChatCard({ data = {} }) {
   const [formData, setFormData] = useState({
     name: data.name || 'Nhà tuyển dụng / Khách quý',
     email: data.email || '',
@@ -206,4 +206,4 @@ export function ContactConfirmChatCard({ data = {} }) {
       </div>
     </div>
   )
-}
+})

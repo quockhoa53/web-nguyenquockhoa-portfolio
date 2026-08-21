@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { BookOpen, ArrowRight, Tag, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-export function ArticleChatCard({ article, onNavigate }) {
+export const ArticleChatCard = memo(function ArticleChatCard({ article, onNavigate }) {
   if (!article) return null
 
   const slug = article.slug
@@ -44,4 +45,4 @@ export function ArticleChatCard({ article, onNavigate }) {
       </div>
     </div>
   )
-}
+})

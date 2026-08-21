@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { ExternalLink, Code2 as Github, ArrowRight, Sparkles, Layers } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-export function ProjectChatCard({ project, onNavigate }) {
+export const ProjectChatCard = memo(function ProjectChatCard({ project, onNavigate }) {
   if (!project) return null
 
   // Parse technologies if string or array
@@ -90,4 +91,4 @@ export function ProjectChatCard({ project, onNavigate }) {
       </div>
     </div>
   )
-}
+})

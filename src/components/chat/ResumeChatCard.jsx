@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { Download, ExternalLink, FileText, Star, Sparkles, Layers } from 'lucide-react'
 import { recordResumeDownload } from '../../services/portfolioApi'
 
-export function ResumeChatCard({ resume }) {
+export const ResumeChatCard = memo(function ResumeChatCard({ resume }) {
   if (!resume) return null
 
   const fileUrl = resume.fileUrl || resume.file_url
@@ -80,4 +81,4 @@ export function ResumeChatCard({ resume }) {
       </div>
     </div>
   )
-}
+})
