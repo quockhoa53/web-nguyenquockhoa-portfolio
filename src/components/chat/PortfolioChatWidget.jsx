@@ -290,7 +290,8 @@ export function PortfolioChatWidget() {
       }
       const utterance = new SpeechSynthesisUtterance(cleanText)
       utterance.lang = 'vi-VN'
-      utterance.rate = 1.0
+      utterance.rate = 1.18 // Fast, natural conversational pace
+      utterance.pitch = 1.05 // Friendly, engaging pitch
       utterance.onend = () => setSpeakingMessageId(null)
       utterance.onerror = () => setSpeakingMessageId(null)
       const voices = window.speechSynthesis.getVoices()
@@ -311,6 +312,7 @@ export function PortfolioChatWidget() {
         const audioBlob = await response.blob()
         const audioUrl = URL.createObjectURL(audioBlob)
         const audio = new Audio(audioUrl)
+        audio.playbackRate = 1.15 // Faster, punchy & energetic delivery
         audioPlayerRef.current = audio
 
         audio.onended = () => {
