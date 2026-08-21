@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, BriefcaseBusiness, House, Mail, Menu, Moon, Phone, Route, Sun, X, Sparkles } from 'lucide-react'
+import { BookOpen, BriefcaseBusiness, House, Mail, Menu, Moon, Phone, Route, Sun, X, Sparkles, Search } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useApiResource } from '../../hooks/useApiResource'
 import { getProfile } from '../../services/portfolioApi'
@@ -46,6 +46,17 @@ export function Header() {
         </nav>
 
         <div className="nav-actions">
+          <button
+            className="cmd-trigger-btn"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+            title="Tìm kiếm nhanh (Ctrl + K / ⌘K)"
+            aria-label="Tìm kiếm nhanh"
+          >
+            <Search size={14} />
+            <span className="cmd-trigger-text">Tìm kiếm</span>
+            <kbd className="cmd-trigger-kbd">⌘K</kbd>
+          </button>
+
           <a className="quick-call" href={`tel:${phoneHref}`}>
             <Phone size={15} /> <span>Gọi ngay</span>
           </a>

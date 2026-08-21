@@ -10,7 +10,12 @@ import {
   RotateCcw,
   HelpCircle,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Square
 } from 'lucide-react'
 import { getProjects, getKnowledgeArticles, getResumes } from '../../services/portfolioApi'
 import { ProjectChatCard } from './ProjectChatCard'
@@ -67,7 +72,9 @@ const ChatMessageItem = memo(function ChatMessageItem({
   projectsList,
   articlesList,
   resumesList,
-  onCloseMobile
+  onCloseMobile,
+  isSpeaking,
+  onSpeak
 }) {
   const { text, contactData } = useMemo(() => parseContactConfirm(message.content), [message.content])
 
@@ -83,7 +90,7 @@ const ChatMessageItem = memo(function ChatMessageItem({
       // Normalize path (handle both full URLs and relative paths)
       let path = href
       if (path.includes('nguyenquockhoaportfolio.vercel.app')) {
-        path = path.replace(/https?:\/\/nguyenquockhoaportfolio\.vercel\.app/, '')
+        path = path.replace(/https?:\/\/nguyenquockho\.vercel\.app/, '')
       }
 
       // 1. Match Project Card: /projects/:id
@@ -168,6 +175,19 @@ const ChatMessageItem = memo(function ChatMessageItem({
                 <ContactConfirmChatCard data={contactData} />
               </div>
             )}
+            {message.role === 'assistant' && text && (
+              <div className="msg-toolbar">
+                <button
+                  className={`msg-speak-btn ${isSpeaking ? 'speaking' : ''}`}
+                  onClick={() => onSpeak?.(text, message.id || text.slice(0, 30))}
+                  title={isSpeaking ? 'Dừng đọc' : 'Nghe giọng đọc AI (Tiếng Việt)'}
+                  aria-label="Nghe đọc tin nhắn"
+                >
+                  {isSpeaking ? <Square size={11} className="stop-icon" /> : <Volume2 size={12} />}
+                  <span>{isSpeaking ? 'Dừng đọc' : 'Nghe'}</span>
+                </button>
+              </div>
+            )}
           </>
         ) : (
           <div className="typing-dots">
@@ -187,6 +207,7 @@ export function PortfolioChatWidget() {
   const [sessionId, setSessionId] = useState(() => 'sess_' + Math.random().toString(36).substring(2, 9))
   const [messages, setMessages] = useState([
     {
+      id: 'welcome-msg',
       role: 'assistant',
       content:
         'Xin chào! 👋 Tôi là **NQK AI Assistant** - Trợ lý AI đại diện cho kỹ sư **Nguyễn Quốc Khoa**.\n\nBạn có thể hỏi tôi về các dự án thực tế, kinh nghiệm thiết kế Backend, tối ưu Database hoặc các giải pháp AI mà Khoa đã triển khai.'
@@ -198,36 +219,60 @@ export function PortfolioChatWidget() {
   const [projectsList, setProjectsList] = useState([])
   const [articlesList, setArticlesList] = useState([])
   const [resumesList, setResumesList] = useState([])
+  
+  // Voice Interaction States
+  const [isListening, setIsListening] = useState(false)
+  const [speakingMessageId, setSpeakingMessageId] = useState(null)
+  const recognitionRef = useRef(null)
+
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
   // Fetch projects, articles and resumes for Generative UI Cards
   useEffect(() => {
-    getProjects()
-      .then(res => {
-        const data = res?.data || res
-        if (Array.isArray(data)) setProjectsList(data)
-      })
-      .catch(() => {})
-
-    getKnowledgeArticles()
-      .then(res => {
-        const data = res?.data || res
-        if (Array.isArray(data)) setArticlesList(data)
-      })
-      .catch(() => {})
-
-    getResumes()
-      .then(res => {
-        const data = res?.data || res
-        if (Array.isArray(data)) setResumesList(data)
-      })
-      .catch(() => {})
+    getProjects().then(res => { const data = res?.data || res; if (Array.isArray(data)) setProjectsList(data) }).catch(() => {})
+    getKnowledgeArticles().then(res => { const data = res?.data || res; if (Array.isArray(data)) setArticlesList(data) }).catch(() => {})
+    getResumes().then(res => { const data = res?.data || res; if (Array.isArray(data)) setResumesList(data) }).catch(() => {})
   }, [])
 
   const handleCloseMobile = useCallback(() => {
     if (window.innerWidth < 768) setIsOpen(false)
   }, [])
+
+  // Text-to-Speech (TTS) handler
+  const handleSpeak = useCallback((text, messageId) => {
+    if (!('speechSynthesis' in window)) return;
+    if (speakingMessageId === messageId) {
+      window.speechSynthesis.cancel()
+      setSpeakingMessageId(null)
+      return
+    }
+    window.speechSynthesis.cancel()
+    let cleanText = text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/[*_#~>`]/g, '').trim()
+    if (!cleanText) return
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    utterance.lang = 'vi-VN'
+    utterance.onend = () => setSpeakingMessageId(null)
+    setSpeakingMessageId(messageId)
+    window.speechSynthesis.speak(utterance)
+  }, [speakingMessageId])
+
+  // Speech-to-Text (STT) voice input handler
+  const toggleListening = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) return;
+    if (isListening) {
+      recognitionRef.current?.stop()
+      return
+    }
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'vi-VN'
+    recognition.onresult = (e) => setInput(e.results[0][0].transcript)
+    recognition.onstart = () => setIsListening(true)
+    recognition.onend = () => setIsListening(false)
+    recognitionRef.current = recognition
+    recognition.start()
+  }, [isListening])
 
   // Auto scroll to latest message
   useEffect(() => {
@@ -235,6 +280,16 @@ export function PortfolioChatWidget() {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, isOpen, isLoading])
+
+  // Listen for open-ai-chat event dispatched by Command Palette
+  useEffect(() => {
+    const handleOpenAIChat = (e) => {
+      setIsOpen(true)
+      if (e.detail?.query) setTimeout(() => handleSend(e.detail.query), 100)
+    }
+    window.addEventListener('open-ai-chat', handleOpenAIChat)
+    return () => window.removeEventListener('open-ai-chat', handleOpenAIChat)
+  }, [])
 
   // Focus input when opened
   useEffect(() => {
@@ -248,6 +303,7 @@ export function PortfolioChatWidget() {
     setSessionId('sess_' + Math.random().toString(36).substring(2, 9))
     setMessages([
       {
+        id: 'welcome-' + Date.now(),
         role: 'assistant',
         content:
           'Xin chào! 👋 Tôi là **NQK AI Assistant** - Trợ lý AI đại diện cho kỹ sư **Nguyễn Quốc Khoa**.\n\nBạn có thể hỏi tôi về các dự án thực tế, kinh nghiệm thiết kế Backend, tối ưu Database hoặc các giải pháp AI mà Khoa đã triển khai.'
@@ -260,23 +316,16 @@ export function PortfolioChatWidget() {
     if (!query || isLoading) return
 
     setInput('')
-    const newMessages = [...messages, { role: 'user', content: query }]
+    const botMsgId = 'bot-' + Date.now()
+    const newMessages = [...messages, { id: 'user-' + Date.now(), role: 'user', content: query }, { id: botMsgId, role: 'assistant', content: '' }]
     setMessages(newMessages)
     setIsLoading(true)
 
-    // Add placeholder assistant message
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }])
-
     try {
-      // 1. Try SSE streaming endpoint
       const response = await fetch(`${CHATBOT_API}/api/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: sessionId,
-          message: query,
-          messages: newMessages.map(m => ({ role: m.role, content: m.content }))
-        })
+        body: JSON.stringify({ session_id: sessionId, message: query })
       })
 
       if (response.ok && response.body) {
@@ -291,74 +340,29 @@ export function PortfolioChatWidget() {
 
           buffer += decoder.decode(value, { stream: true })
           const lines = buffer.split('\n')
-          // Keep incomplete last segment in buffer
           buffer = lines.pop() || ''
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
-              const dataPayload = line.slice(6)
-              if (dataPayload === '[DONE]') continue
-
-              let token = ''
+              const dataPayload = line.slice(6).trim()
+              if (!dataPayload || dataPayload === '[DONE]') continue
               try {
                 const parsed = JSON.parse(dataPayload)
                 if (parsed.done) continue
-                token = parsed.content !== undefined ? parsed.content : ''
+                if (parsed.content !== undefined) {
+                  accumulated += parsed.content
+                }
               } catch {
-                token = dataPayload
+                accumulated += dataPayload
               }
-
-              if (token) {
-                accumulated += token
-                setMessages(prev => {
-                  const updated = [...prev]
-                  updated[updated.length - 1] = {
-                    role: 'assistant',
-                    content: accumulated
-                  }
-                  return updated
-                })
-              }
+              setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: accumulated } : m))
             }
           }
         }
-      } else {
-        // 2. Try standard POST endpoint
-        const fallbackRes = await fetch(`${CHATBOT_API}/api/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            session_id: sessionId,
-            message: query,
-            messages: newMessages.map(m => ({ role: m.role, content: m.content }))
-          })
-        })
-
-        if (fallbackRes.ok) {
-          const data = await fallbackRes.json()
-          setMessages(prev => {
-            const updated = [...prev]
-            updated[updated.length - 1] = {
-              role: 'assistant',
-              content: data.reply
-            }
-            return updated
-          })
-        } else {
-          throw new Error('API request failed')
-        }
       }
     } catch (err) {
-      console.warn('Chatbot API unreachable, using client-side helper:', err)
       const fallbackReply = generateClientFallbackReply(query)
-      setMessages(prev => {
-        const updated = [...prev]
-        updated[updated.length - 1] = {
-          role: 'assistant',
-          content: fallbackReply
-        }
-        return updated
-      })
+      setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackReply } : m))
     } finally {
       setIsLoading(false)
     }
@@ -373,30 +377,16 @@ export function PortfolioChatWidget() {
 
   return (
     <div className="portfolio-chatbot-wrapper">
-      {/* Floating Launcher Button */}
       {!isOpen && (
         <div className="chat-launcher-container">
           {showTooltip && (
             <div className="chat-launcher-tooltip" onClick={() => setIsOpen(true)}>
               <Sparkles size={13} className="tooltip-sparkle" />
               <span>Hỏi NQK AI về kinh nghiệm & dự án!</span>
-              <button
-                className="tooltip-close"
-                onClick={e => {
-                  e.stopPropagation()
-                  setShowTooltip(false)
-                }}
-              >
-                ×
-              </button>
+              <button className="tooltip-close" onClick={e => { e.stopPropagation(); setShowTooltip(false) }}>×</button>
             </div>
           )}
-
-          <button
-            className="chat-launcher-btn"
-            onClick={() => setIsOpen(true)}
-            aria-label="Mở Trợ lý AI NQK"
-          >
+          <button className="chat-launcher-btn" onClick={() => setIsOpen(true)} aria-label="Mở Trợ lý AI NQK">
             <div className="launcher-pulse-ring" />
             <div className="launcher-icon-box">
               <img src="/chatbot-avatar.png" alt="NQK AI Robot" className="launcher-bot-img" />
@@ -406,10 +396,8 @@ export function PortfolioChatWidget() {
         </div>
       )}
 
-      {/* Floating Chat Modal Window */}
       {isOpen && (
         <div className={`chat-window-modal reveal ${isExpanded ? 'chat-expanded' : ''}`}>
-          {/* Header */}
           <div className="chat-header">
             <div className="chat-header-info">
               <div className="bot-avatar">
@@ -418,38 +406,16 @@ export function PortfolioChatWidget() {
               </div>
               <div>
                 <h3 className="bot-name font-display">NQK AI Assistant</h3>
-                <span className="bot-status font-mono">
-                  <span className="status-indicator" /> Online · Trợ lý AI Chuyên môn
-                </span>
+                <span className="bot-status font-mono"><span className="status-indicator" /> Voice & Chat</span>
               </div>
             </div>
-
             <div className="chat-header-actions">
-              <button
-                className="header-icon-btn"
-                onClick={() => setIsExpanded(!isExpanded)}
-                title={isExpanded ? 'Thu nhỏ khung chat' : 'Phóng to khung chat'}
-              >
-                {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              </button>
-              <button
-                className="header-icon-btn"
-                onClick={handleReset}
-                title="Làm mới cuộc trò chuyện"
-              >
-                <RotateCcw size={16} />
-              </button>
-              <button
-                className="header-icon-btn"
-                onClick={() => setIsOpen(false)}
-                title="Đóng cửa sổ"
-              >
-                <X size={18} />
-              </button>
+              <button className="header-icon-btn" onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
+              <button className="header-icon-btn" onClick={handleReset}><RotateCcw size={16} /></button>
+              <button className="header-icon-btn" onClick={() => setIsOpen(false)}><X size={18} /></button>
             </div>
           </div>
 
-          {/* Messages Container */}
           <div className="chat-messages-container">
             {messages.map((m, idx) => (
               <ChatMessageItem
@@ -459,51 +425,28 @@ export function PortfolioChatWidget() {
                 articlesList={articlesList}
                 resumesList={resumesList}
                 onCloseMobile={handleCloseMobile}
+                isSpeaking={speakingMessageId === (m.id || m.content.slice(0, 30))}
+                onSpeak={handleSpeak}
               />
             ))}
-
-            {/* Quick Suggestion Chips on New Chat */}
-            {messages.length <= 2 && !isLoading && (
-              <div className="chat-suggestions-box">
-                <small className="suggestions-title">
-                  <HelpCircle size={13} /> Câu hỏi gợi ý nhanh:
-                </small>
-                <div className="suggestions-list">
-                  {DEFAULT_SUGGESTIONS.map((s, i) => (
-                    <button
-                      key={i}
-                      className="suggestion-chip"
-                      onClick={() => handleSend(s)}
-                    >
-                      <span>{s}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input Bar */}
           <div className="chat-input-container">
+            <button className={`chat-voice-btn ${isListening ? 'listening' : ''}`} onClick={toggleListening}>
+              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
             <input
               ref={inputRef}
               type="text"
               className="chat-text-input"
-              placeholder="Hỏi về dự án, kỹ năng, kiến trúc..."
+              placeholder={isListening ? 'Đang lắng nghe...' : 'Hỏi về dự án, kỹ năng...'}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isLoading}
             />
-
-            <button
-              className={`chat-send-btn ${input.trim() && !isLoading ? 'active' : ''}`}
-              onClick={() => handleSend()}
-              disabled={!input.trim() || isLoading}
-              title="Gửi tin nhắn"
-            >
+            <button className={`chat-send-btn ${input.trim() && !isLoading ? 'active' : ''}`} onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
               <Send size={16} />
             </button>
           </div>
@@ -531,7 +474,8 @@ function generateClientFallbackReply(query) {
   if (q.includes('liên hệ') || q.includes('contact') || q.includes('email') || q.includes('tuyển dụng')) {
     return (
       'Bạn có thể kết nối trực tiếp với Nguyễn Quốc Khoa qua:\n\n' +
-      '- **Email**: quockhoa.work@gmail.com\n' +
+      '- **Email**: nguyenquockhoa5549@gmail.com\n' +
+      '- **Số điện thoại / Zalo**: 0969 895 549\n' +
       '- **GitHub**: [github.com/quockhoa53](https://github.com/quockhoa53)\n' +
       '- **Trang Liên hệ**: Vui lòng truy cập mục **Liên hệ** trên menu để gửi tin nhắn trực tiếp.'
     )

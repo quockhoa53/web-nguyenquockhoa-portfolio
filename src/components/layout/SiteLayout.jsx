@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Footer } from './Footer'
 import { Header } from './Header'
 import { PortfolioChatWidget } from '../chat/PortfolioChatWidget'
+import { CommandPalette } from '../common/CommandPalette'
 
 export function SiteLayout() {
   const { pathname } = useLocation()
@@ -16,6 +17,7 @@ export function SiteLayout() {
       <Outlet />
       <Footer />
       <PortfolioChatWidget />
+      <CommandPalette />
     </>
   )
 }
