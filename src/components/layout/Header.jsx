@@ -28,29 +28,13 @@ export function Header() {
   return (
     <header className="site-header">
       <div className="nav-shell">
-        <div className="brand-group">
-          <NavLink to="/" className="brand" onClick={() => setOpen(false)} title="Nguyễn Quốc Khoa - Trang chủ">
-            <div className="brand-mark-wrapper">
-              <span className="brand-mark">&lt;/&gt;</span>
-            </div>
-            <div className="brand-text-col">
-              <div className="brand-title">
-                <b>NQK</b>
-                <span className="brand-dot">·</span>
-                <span className="brand-name">Quốc Khoa</span>
-              </div>
-              <span className="brand-subtitle">Backend &amp; AI Systems</span>
-            </div>
-          </NavLink>
-
-          <div className="brand-status-badge" title="Sẵn sàng nhận dự án & cơ hội hợp tác">
-            <span className="status-pulse-dot">
-              <span className="pulse-ring" />
-              <span className="pulse-core" />
-            </span>
-            <span className="status-badge-text">Available for hire</span>
-          </div>
-        </div>
+        <NavLink to="/" className="brand" onClick={() => setOpen(false)} title="Nguyễn Quốc Khoa - Trang chủ">
+          <span className="brand-mark">&lt;/&gt;</span>
+          <span className="brand-text">
+            <span className="brand-main">NQK</span>
+            <span className="brand-badge">PORTFOLIO</span>
+          </span>
+        </NavLink>
 
         <nav className="desktop-nav">
           {links.map(([to, label, Icon]) => (
