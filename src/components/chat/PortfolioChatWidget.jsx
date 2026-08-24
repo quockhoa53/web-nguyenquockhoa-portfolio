@@ -27,10 +27,11 @@ import { ContactConfirmChatCard } from './ContactConfirmChatCard'
 const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
 
 const DEFAULT_SUGGESTIONS = [
-  'Kinh nghiệm làm việc & năng lực của Khoa?',
-  'Các dự án nổi bật mà Khoa đã thực hiện?',
-  'Khoa sử dụng những công nghệ Backend & AI nào?',
-  'Làm thế nào để liên hệ và hợp tác với Khoa?'
+  { icon: '💼', text: 'Kinh nghiệm làm việc & năng lực của Khoa?' },
+  { icon: '🚀', text: 'Các dự án nổi bật mà Khoa đã thực hiện?' },
+  { icon: '⚡', text: 'Khoa sử dụng những công nghệ Backend & AI nào?' },
+  { icon: '📄', text: 'Tải CV & hồ sơ năng lực của Khoa' },
+  { icon: '📞', text: 'Làm thế nào để liên hệ và hợp tác với Khoa?' }
 ]
 
 function parseContactConfirm(content) {
@@ -509,7 +510,45 @@ export function PortfolioChatWidget() {
                 onSpeak={handleSpeak}
               />
             ))}
+
+            {messages.length <= 1 && (
+              <div className="chat-suggestions-container">
+                <div className="suggestions-header">
+                  <Sparkles size={13} className="suggestions-sparkle" />
+                  <span>Mẫu câu hỏi gợi ý nhanh:</span>
+                </div>
+                <div className="suggestions-grid">
+                  {DEFAULT_SUGGESTIONS.map((sug, i) => (
+                    <button
+                      key={i}
+                      className="suggestion-chip-btn"
+                      onClick={() => handleSend(sug.text)}
+                      disabled={isLoading}
+                    >
+                      <span className="sug-icon">{sug.icon}</span>
+                      <span className="sug-text">{sug.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
+          </div>
+
+          <div className="chat-quick-bar">
+            {DEFAULT_SUGGESTIONS.map((sug, i) => (
+              <button
+                key={i}
+                className="quick-pill-btn"
+                onClick={() => handleSend(sug.text)}
+                disabled={isLoading}
+                title={sug.text}
+              >
+                <span>{sug.icon}</span>
+                <span className="quick-pill-text">{sug.text}</span>
+              </button>
+            ))}
           </div>
 
           <div className="chat-input-container">
