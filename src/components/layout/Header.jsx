@@ -28,12 +28,8 @@ export function Header() {
   return (
     <header className="site-header">
       <div className="nav-shell">
-        <NavLink to="/" className="brand" onClick={() => setOpen(false)} title="Nguyễn Quốc Khoa - Trang chủ">
-          <span className="brand-mark">&lt;/&gt;</span>
-          <span className="brand-text">
-            <span className="brand-main">NQK</span>
-            <span className="brand-badge">PORTFOLIO</span>
-          </span>
+        <NavLink to="/" className="brand" onClick={() => setOpen(false)} title="Trang chủ NQK">
+          <img src="/logo.png" alt="NQK - Backend & AI Systems" className="brand-logo-img" />
         </NavLink>
 
         <nav className="desktop-nav">

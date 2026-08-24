@@ -134,76 +134,26 @@ button {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin-right: auto;
   text-decoration: none;
-  transition: opacity 0.15s ease;
-}
-
-.brand:hover {
-  opacity: 0.88;
-}
-
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-  color: #ffffff;
-  font: 700 12px var(--font-mono, 'JetBrains Mono', monospace);
-  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
-  letter-spacing: -0.5px;
-}
-
-.brand-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.brand-main {
-  font-family: var(--font-display, 'Space Grotesk', sans-serif);
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text, #f8fafc);
-  letter-spacing: -0.02em;
-}
-
-.light .brand-main {
-  color: #0f172a;
-}
-
-.brand-badge {
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 5px;
-  background: rgba(56, 189, 248, 0.1);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.2);
-}
-
-.light .brand-badge {
-  background: rgba(14, 165, 233, 0.08);
-  color: #0284c7;
-  border-color: rgba(14, 165, 233, 0.2);
 }
 
 .brand-logo-img {
-  height: 36px;
-  max-width: 140px;
+  height: 42px;
+  max-width: 160px;
   width: auto;
   object-fit: contain;
   display: block;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brand:hover .brand-logo-img {
+  transform: scale(1.04);
 }
 
 .footer-logo-img {
-  height: 40px;
-  max-width: 150px;
+  height: 44px;
+  max-width: 170px;
   width: auto;
   object-fit: contain;
   display: block;
