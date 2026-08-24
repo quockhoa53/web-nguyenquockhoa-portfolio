@@ -425,10 +425,10 @@ export function PortfolioChatWidget() {
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
-              const dataPayload = line.slice(6).trim()
-              if (!dataPayload || dataPayload === '[DONE]') continue
+              const dataPayload = line.slice(6)
+              if (!dataPayload.trim() || dataPayload.trim() === '[DONE]') continue
               try {
-                const parsed = JSON.parse(dataPayload)
+                const parsed = JSON.parse(dataPayload.trim())
                 if (parsed.done) continue
                 if (parsed.content !== undefined) {
                   accumulated += parsed.content
