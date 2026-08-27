@@ -2455,6 +2455,17 @@
   color: var(--adm-text-muted);
 }
 
+.admin-app.light-mode .ai-learning-title-box h3,
+.admin-app.light-mode .suggested-fact-title,
+.admin-app.light-mode .ai-insight-val {
+  color: #0f172a !important;
+}
+
+.admin-app.light-mode .ai-learning-title-box p,
+.admin-app.light-mode .suggested-fact-content {
+  color: #334155 !important;
+}
+
 .ai-insights-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -2576,27 +2587,85 @@
   gap: 4px;
 }
 
+/* Action buttons inside suggested fact card */
+.suggested-fact-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
 .btn-adopt-fact {
+  flex: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 100%;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: 10px;
-  background: var(--adm-primary-gradient);
+  background: var(--adm-primary-gradient, linear-gradient(135deg, #10b981 0%, #059669 100%));
   border: none;
-  color: #ffffff;
+  color: #ffffff !important;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: var(--adm-primary-glow);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-adopt-fact:hover {
   transform: translateY(-1px);
-  filter: brightness(1.1);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  filter: brightness(1.08);
+}
+
+.btn-edit-fact-sug {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  color: var(--adm-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-edit-fact-sug:hover {
+  border-color: var(--adm-primary);
+  color: var(--adm-primary);
+  background: var(--adm-surface-hover);
+  transform: translateY(-1px);
+}
+
+.btn-reject-fact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-reject-fact:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  transform: translateY(-1px);
 }
 
 /* Inquiries Tag Cloud */

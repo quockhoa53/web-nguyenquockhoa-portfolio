@@ -284,6 +284,24 @@ export function AdminContentPage() {
     }
   }
 
+  function handleRejectFact(factTitle) {
+    setAiInsights(prev => prev ? {
+      ...prev,
+      suggested_facts: prev.suggested_facts.filter(f => f.title !== factTitle)
+    } : null)
+    toast.success('Đã bỏ qua gợi ý Fact này!')
+  }
+
+  function handleEditSuggestedFact(fact) {
+    setEditing({
+      category: fact.category,
+      title: fact.title,
+      content: fact.content,
+      isActive: true,
+      displayOrder: items.length + 1
+    })
+  }
+
   async function handleTestMail() {
     setTestingMail(true)
     try {
@@ -584,14 +602,36 @@ export function AdminContentPage() {
                             </p>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          className="btn-adopt-fact"
-                          onClick={() => handleAdoptFact(sug)}
-                        >
-                          <Plus size={13} />
-                          <span>Nạp vào Bộ nhớ AI (1-Click)</span>
-                        </button>
+
+                        <div className="suggested-fact-actions">
+                          <button
+                            type="button"
+                            className="btn-adopt-fact"
+                            onClick={() => handleAdoptFact(sug)}
+                            title="Chấp thuận và nạp ngay vào Bộ nhớ AI"
+                          >
+                            <Check size={13} />
+                            <span>Chấp thuận</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-edit-fact-sug"
+                            onClick={() => handleEditSuggestedFact(sug)}
+                            title="Chỉnh sửa nội dung trước khi nạp"
+                          >
+                            <Edit3 size={13} />
+                            <span>Sửa</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-reject-fact"
+                            onClick={() => handleRejectFact(sug.title)}
+                            title="Bỏ qua / Từ chối gợi ý này"
+                          >
+                            <X size={13} />
+                            <span>Bỏ qua</span>
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
