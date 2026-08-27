@@ -23,9 +23,9 @@
   --adm-text: #0f172a;
   --adm-text-sub: #475569;
   --adm-text-muted: #94a3b8;
-  --adm-sidebar-bg: #0c0c12;
-  --adm-sidebar-text: #a1a1aa;
-  --adm-topbar-bg: rgba(255, 255, 255, 0.88);
+  --adm-sidebar-bg: #ffffff;
+  --adm-sidebar-text: #475569;
+  --adm-topbar-bg: rgba(255, 255, 255, 0.92);
   --adm-card-shadow: 0 10px 30px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
   --adm-primary: #7c3aed;
   --adm-primary-glow: rgba(124, 58, 237, 0.25);
@@ -274,22 +274,22 @@
 
 .toast-item.toast-success {
   border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2), 0 0 20px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15), 0 0 20px rgba(16, 185, 129, 0.2);
 }
 
 .toast-item.toast-error {
   border-color: rgba(239, 68, 68, 0.4);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2), 0 0 20px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15), 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
 .toast-item.toast-warning {
   border-color: rgba(245, 158, 11, 0.4);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2), 0 0 20px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15), 0 0 20px rgba(245, 158, 11, 0.2);
 }
 
 .toast-item.toast-info {
   border-color: rgba(6, 182, 212, 0.4);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2), 0 0 20px rgba(6, 182, 212, 0.2);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15), 0 0 20px rgba(6, 182, 212, 0.2);
 }
 
 .toast-icon-wrap {
@@ -380,7 +380,7 @@
   padding: 16px 14px 14px;
   z-index: 40;
   border-right: 1px solid var(--adm-border);
-  box-shadow: 6px 0 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 6px 0 30px rgba(0, 0, 0, 0.06);
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
@@ -389,7 +389,7 @@
   align-items: center;
   gap: 12px;
   padding: 4px 6px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--adm-border);
 }
 
 .admin-logo-monogram {
@@ -406,13 +406,13 @@
 .admin-logo-meta b {
   font-size: 15px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--adm-text);
   letter-spacing: -0.01em;
   display: block;
 }
 
 .admin-logo-meta small {
-  color: #71717a;
+  color: var(--adm-text-muted);
   font-size: 10px;
   font-weight: 600;
   display: block;
@@ -463,40 +463,23 @@
 }
 
 .admin-nav-link:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background: var(--adm-surface-hover);
+  color: var(--adm-text);
   transform: translateX(2px);
 }
 
 .admin-nav-link.active {
-  background: linear-gradient(90deg, rgba(168, 85, 247, 0.15), rgba(99, 102, 241, 0.05));
+  background: rgba(124, 58, 237, 0.08);
   color: var(--adm-primary);
   font-weight: 700;
-  border: 1px solid rgba(168, 85, 247, 0.25);
+  border: 1px solid rgba(124, 58, 237, 0.2);
 }
 
-.admin-app[data-palette="gold"] .admin-nav-link.active {
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(234, 88, 12, 0.05));
-  color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.3);
-}
-
-.admin-app[data-palette="cyan"] .admin-nav-link.active {
-  background: linear-gradient(90deg, rgba(6, 182, 212, 0.15), rgba(59, 130, 246, 0.05));
-  color: #22d3ee;
-  border-color: rgba(6, 182, 212, 0.3);
-}
-
-.admin-app[data-palette="rose"] .admin-nav-link.active {
-  background: linear-gradient(90deg, rgba(244, 63, 94, 0.15), rgba(217, 70, 239, 0.05));
-  color: #fb7185;
-  border-color: rgba(244, 63, 94, 0.3);
-}
-
-.admin-app[data-palette="emerald"] .admin-nav-link.active {
-  background: linear-gradient(90deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.05));
-  color: #34d399;
-  border-color: rgba(16, 185, 129, 0.3);
+.dark .admin-nav-link.active,
+.admin-app.dark-mode .admin-nav-link.active {
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.15), rgba(99, 102, 241, 0.05));
+  color: var(--adm-primary);
+  border-color: rgba(168, 85, 247, 0.25);
 }
 
 .active-glow-indicator {
@@ -520,8 +503,8 @@
   gap: 10px;
   padding: 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--adm-surface-subtle);
+  border: 1px solid var(--adm-border);
   margin-top: auto;
 }
 
@@ -546,7 +529,7 @@
 .admin-user-info b {
   font-size: 12px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--adm-text);
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -555,14 +538,14 @@
 
 .admin-user-info small {
   font-size: 10px;
-  color: #71717a;
+  color: var(--adm-text-muted);
   display: block;
 }
 
 .admin-logout-btn {
   background: none;
   border: none;
-  color: #a1a1aa;
+  color: var(--adm-text-muted);
   cursor: pointer;
   padding: 6px;
   border-radius: 7px;
@@ -1480,7 +1463,7 @@
   background: var(--adm-surface);
   border: 1px solid var(--adm-border);
   border-radius: 20px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1996,7 +1979,7 @@
   align-items: center;
   gap: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--adm-border-subtle);
+  border-bottom: 1px solid var(--adm-border);
 }
 
 .settings-icon-circle {
@@ -2096,11 +2079,17 @@
   margin-top: 2px;
 }
 
-/* Color Palettes Grid */
+/* Color Palettes Grid (5 Balanced Cards in 1 row on Desktop) */
 .settings-palettes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
+}
+
+@media (min-width: 1100px) {
+  .settings-palettes-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .palette-card-option {
@@ -2126,7 +2115,7 @@
 
 .palette-card-top {
   position: relative;
-  height: 24px;
+  height: 26px;
 }
 
 .palette-color-preview-bar {
@@ -2143,7 +2132,7 @@
   gap: 3px;
   padding: 2px 7px;
   border-radius: 99px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   color: #ffffff;
   font-size: 9.5px;
@@ -2154,7 +2143,8 @@
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  flex: 1;
 }
 
 .palette-card-title-row {
@@ -2171,36 +2161,38 @@
 }
 
 .palette-card-title-row strong {
-  font-size: 13px;
+  font-size: 12.5px;
+  font-weight: 700;
   color: var(--adm-text);
+  line-height: 1.3;
 }
 
 .palette-card-body small {
   font-size: 11px;
-  color: var(--adm-text-muted);
+  color: var(--adm-text-sub);
   line-height: 1.4;
 }
 
-/* Service Status Cards */
+/* Service Status Cards (No text cut off / no ellipsis) */
 .settings-services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
 }
 
 .service-status-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 14px 18px;
   background: var(--adm-surface-subtle);
   border: 1px solid var(--adm-border);
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 .service-card-icon {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   display: grid;
   place-items: center;
@@ -2216,16 +2208,19 @@
 }
 
 .service-card-info strong {
-  font-size: 12.5px;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--adm-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
+  display: block;
 }
 
 .service-card-info small {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--adm-text-muted);
+  line-height: 1.3;
+  display: block;
+  margin-top: 1px;
 }
 
 .service-pill {
@@ -2233,6 +2228,7 @@
   border-radius: 99px;
   font-size: 10px;
   font-weight: 800;
+  flex-shrink: 0;
 }
 
 .service-pill.live {
