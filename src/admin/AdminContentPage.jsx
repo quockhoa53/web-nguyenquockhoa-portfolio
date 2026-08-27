@@ -1,10 +1,47 @@
-import { Check, Edit3, Plus, Search, Trash2, X, Mail, Loader2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
+import {
+  Plus,
+  Search,
+  Edit3,
+  Trash2,
+  Check,
+  X,
+  RefreshCw,
+  Mail,
+  Loader2,
+  ArrowUpDown,
+  Filter,
+  Layers,
+  Sparkles
+} from 'lucide-react'
 import { useToast } from '../components/common/ToastContext'
-import { createAdminItem, deleteAdminItem, getAdminAiFacts, getAdminArticles, getAdminComments, getAdminContacts, getAdminGuests, getAdminLikes, getAdminWorkItems, moderateComment, updateAdminItem, updateProfile, testSendEmail } from '../services/adminApi'
-import { getExperiences, getKnowledgeCategories, getProfile, getProjects, getSkills } from '../services/portfolioApi'
+import {
+  createAdminItem,
+  deleteAdminItem,
+  getAdminAiFacts,
+  getAdminArticles,
+  getAdminComments,
+  getAdminContacts,
+  getAdminGuests,
+  getAdminLikes,
+  getAdminWorkItems,
+  moderateComment,
+  updateAdminItem,
+  updateProfile,
+  testSendEmail
+} from '../services/adminApi'
+import {
+  getExperiences,
+  getKnowledgeCategories,
+  getProfile,
+  getProjects,
+  getSkills
+} from '../services/portfolioApi'
 import { RichEditor } from './RichEditor'
+import { AdminPagination } from './components/AdminPagination'
+import { AdminImageUpload } from './components/AdminImageUpload'
+import { AdminStatusBadge } from './components/AdminStatusBadge'
 
 const SKILL_CATEGORIES = [
   'Backend & Architecture',
@@ -23,42 +60,123 @@ const AI_FACT_CATEGORIES = [
 ]
 
 const configs = {
-  likes: { title: 'Người đã yêu thích', load: getAdminLikes, readonly: true },
-  profile: { title: 'Thông tin Profile & Liên hệ', single: true, load: getProfile, resource: 'profile', fields: [['fullName', 'Họ và tên'], ['headline', 'Chức danh'], ['education', 'Học vấn & Trường đại học (JSON/Text)', 'textarea'], ['email', 'Email liên hệ', 'email'], ['phone', 'Số điện thoại'], ['location', 'Địa chỉ / Tỉnh thành'], ['facebookUrl', 'Link Facebook (URL)'], ['githubUrl', 'Link GitHub (URL)'], ['linkedinUrl', 'Link LinkedIn (URL)'], ['avatarUrl', 'Ảnh đại diện (URL)'], ['shortBio', 'Mô tả ngắn trên trang chủ', 'textarea'], ['bio', 'Nội dung chi tiết Profile', 'rich']] },
-  skills: { title: 'Năng lực kỹ thuật', load: getSkills, resource: 'skills', fields: [['name', 'Tên kỹ năng'], ['category', 'Nhóm kỹ năng', 'select', SKILL_CATEGORIES], ['proficiency', 'Mức độ (%)', 'number'], ['displayOrder', 'Thứ tự hiển thị', 'number']] },
-  experiences: { title: 'Kinh nghiệm', load: getExperiences, resource: 'experiences', fields: [['company', 'Công ty'], ['position', 'Vị trí'], ['startDate', 'Ngày bắt đầu', 'date'], ['endDate', 'Ngày kết thúc', 'date'], ['description', 'Mô tả', 'rich'], ['displayOrder', 'Thứ tự', 'number']] },
-  projects: { title: 'Dự án', load: getProjects, resource: 'projects', fields: [['title', 'Tên dự án'], ['description', 'Nội dung', 'rich'], ['technologies', 'Công nghệ'], ['imageUrl', 'Ảnh'], ['demoUrl', 'Demo URL'], ['sourceUrl', 'Source URL'], ['featured', 'Nổi bật', 'checkbox'], ['displayOrder', 'Thứ tự', 'number']] },
-  categories: { title: 'Danh mục kiến thức', load: getKnowledgeCategories, resource: 'knowledge/categories', fields: [['name', 'Tên danh mục'], ['slug', 'Slug (Tùy chọn)'], ['description', 'Mô tả', 'rich'], ['displayOrder', 'Thứ tự', 'number']] },
+  likes: { title: 'Lượt Yêu Thích', load: getAdminLikes, readonly: true },
+  profile: {
+    title: 'Hồ Sơ & Thông Tin Cá Nhân',
+    single: true,
+    load: getProfile,
+    resource: 'profile',
+    fields: [
+      ['fullName', 'Họ và tên'],
+      ['headline', 'Chức danh'],
+      ['email', 'Email liên hệ', 'email'],
+      ['phone', 'Số điện thoại'],
+      ['location', 'Địa chỉ / Tỉnh thành'],
+      ['avatarUrl', 'Ảnh đại diện', 'image_upload', 'portfolio/avatars'],
+      ['facebookUrl', 'Link Facebook (URL)'],
+      ['githubUrl', 'Link GitHub (URL)'],
+      ['linkedinUrl', 'Link LinkedIn (URL)'],
+      ['shortBio', 'Mô tả ngắn trên trang chủ', 'textarea'],
+      ['education', 'Học vấn & Bằng cấp (JSON/Text)', 'textarea'],
+      ['bio', 'Nội dung chi tiết Profile', 'rich']
+    ]
+  },
+  skills: {
+    title: 'Năng Lực Kỹ Thuật',
+    load: getSkills,
+    resource: 'skills',
+    fields: [
+      ['name', 'Tên kỹ năng'],
+      ['category', 'Nhóm kỹ năng', 'select', SKILL_CATEGORIES],
+      ['proficiency', 'Mức độ thông thạo (%)', 'number'],
+      ['displayOrder', 'Thứ tự hiển thị', 'number']
+    ]
+  },
+  experiences: {
+    title: 'Kinh Nghiệm Làm Việc',
+    load: getExperiences,
+    resource: 'experiences',
+    fields: [
+      ['company', 'Công ty / Tổ chức'],
+      ['position', 'Vị trí công việc'],
+      ['startDate', 'Ngày bắt đầu', 'date'],
+      ['endDate', 'Ngày kết thúc (để trống nếu hiện tại)', 'date'],
+      ['displayOrder', 'Thứ tự hiển thị', 'number'],
+      ['description', 'Mô tả chi tiết kinh nghiệm', 'rich']
+    ]
+  },
+  projects: {
+    title: 'Dự Án Tiêu Biểu',
+    load: getProjects,
+    resource: 'projects',
+    fields: [
+      ['title', 'Tên dự án'],
+      ['technologies', 'Công nghệ sử dụng (vd: Spring Boot, PostgreSQL, Docker)'],
+      ['imageUrl', 'Ảnh bìa dự án', 'image_upload', 'portfolio/projects'],
+      ['demoUrl', 'Link Demo / Live Web (URL)'],
+      ['sourceUrl', 'Link Source Code (GitHub URL)'],
+      ['displayOrder', 'Thứ tự hiển thị', 'number'],
+      ['featured', 'Đánh dấu nổi bật trên trang chủ', 'checkbox'],
+      ['description', 'Nội dung chi tiết dự án', 'rich']
+    ]
+  },
+  categories: {
+    title: 'Danh Mục Kiến Thức',
+    load: getKnowledgeCategories,
+    resource: 'knowledge/categories',
+    fields: [
+      ['name', 'Tên danh mục'],
+      ['slug', 'Slug định danh URL (Tùy chọn)'],
+      ['displayOrder', 'Thứ tự hiển thị', 'number'],
+      ['description', 'Mô tả danh mục', 'rich']
+    ]
+  },
   articles: {
-    title: 'Bài viết kiến thức',
+    title: 'Bài Viết Kiến Thức',
     load: getAdminArticles,
     resource: 'knowledge/articles',
     fields: [
-      ['categoryId', 'Loại kiến thức (Danh mục)', 'category_select'],
+      ['categoryId', 'Danh mục bài viết', 'category_select'],
       ['title', 'Tiêu đề bài viết'],
-      ['summary', 'Tóm tắt bài viết', 'textarea'],
-      ['content', 'Nội dung chi tiết bài viết', 'rich'],
-      ['thumbnailUrl', 'Ảnh bìa (URL)'],
-      ['status', 'Trạng thái', 'select', ['PUBLISHED', 'DRAFT', 'ARCHIVED']],
-      ['featured', 'Đánh dấu nổi bật', 'checkbox']
+      ['thumbnailUrl', 'Ảnh bìa bài viết', 'image_upload', 'portfolio/articles'],
+      ['status', 'Trạng thái bài viết', 'select', ['PUBLISHED', 'DRAFT', 'ARCHIVED']],
+      ['featured', 'Đánh dấu bài viết nổi bật', 'checkbox'],
+      ['summary', 'Tóm tắt ngắn gọn', 'textarea'],
+      ['content', 'Nội dung chi tiết bài viết', 'rich']
     ]
   },
-  'work-items': { title: 'Quá trình làm việc', load: getAdminWorkItems, resource: 'work-items', fields: [['title', 'Tiêu đề công việc'], ['slug', 'Slug (Tùy chọn)'], ['period', 'Thời gian (vd: 2024 - Hiện tại)'], ['role', 'Vai trò / Chức danh'], ['company', 'Công ty / Tổ chức'], ['summary', 'Tóm tắt công việc', 'rich'], ['content', 'Chi tiết công việc', 'rich'], ['technologies', 'Công nghệ (dấu phẩy phân cách)'], ['displayOrder', 'Thứ tự hiển thị', 'number'], ['published', 'Đã xuất bản', 'checkbox']] },
+  'work-items': {
+    title: 'Quá Trình Làm Việc',
+    load: getAdminWorkItems,
+    resource: 'work-items',
+    fields: [
+      ['title', 'Tiêu đề công việc'],
+      ['slug', 'Slug định danh URL (Tùy chọn)'],
+      ['period', 'Thời gian (vd: 2024 - Hiện tại)'],
+      ['role', 'Vai trò / Chức vụ'],
+      ['company', 'Công ty / Tổ chức'],
+      ['technologies', 'Công nghệ liên quan'],
+      ['displayOrder', 'Thứ tự hiển thị', 'number'],
+      ['published', 'Đã xuất bản lên web', 'checkbox'],
+      ['summary', 'Tóm tắt công việc', 'rich'],
+      ['content', 'Chi tiết quá trình làm việc', 'rich']
+    ]
+  },
   'ai-facts': {
-    title: 'Bộ nhớ AI & Thông tin bổ sung',
+    title: 'Bộ Nhớ AI (AI Persona Facts)',
     load: getAdminAiFacts,
     resource: 'ai-facts',
     fields: [
       ['category', 'Phân loại chủ đề', 'select', AI_FACT_CATEGORIES],
-      ['title', 'Tiêu đề / Chủ đề (Ví dụ: Người yêu, Sở thích, Thần tượng...)'],
-      ['content', 'Nội dung chi tiết cung cấp cho AI', 'textarea'],
+      ['title', 'Tiêu đề / Chủ đề (Ví dụ: Sở thích, Học vấn, Quan điểm...)'],
       ['displayOrder', 'Thứ tự ưu tiên', 'number'],
-      ['isActive', 'Kích hoạt cho AI', 'checkbox']
+      ['isActive', 'Kích hoạt cho AI đọc', 'checkbox'],
+      ['content', 'Nội dung chi tiết nạp cho AI Assistant', 'textarea']
     ]
   },
-  comments: { title: 'Kiểm duyệt bình luận', load: getAdminComments, readonly: true },
-  contacts: { title: 'Tin nhắn liên hệ', load: getAdminContacts, readonly: true },
-  guests: { title: 'Khách truy cập', load: getAdminGuests, readonly: true }
+  comments: { title: 'Kiểm Duyệt Bình Luận', load: getAdminComments, readonly: true },
+  contacts: { title: 'Tin Nhắn Khách Hàng', load: getAdminContacts, readonly: true },
+  guests: { title: 'Khách Truy Cập', load: getAdminGuests, readonly: true }
 }
 
 function renderCellText(val) {
@@ -77,15 +195,23 @@ export function AdminContentPage() {
   const [editing, setEditing] = useState(null)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('ALL')
+  const [sortBy, setSortBy] = useState('DEFAULT') // 'DEFAULT' | 'NEWEST' | 'ORDER'
   const [loading, setLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [testingMail, setTestingMail] = useState(false)
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
   const toast = useToast()
 
   async function handleTestMail() {
     setTestingMail(true)
     try {
       const res = await testSendEmail()
-      toast.success(res?.message || 'Đã gửi email test thành công! Vui lòng kiểm tra hộp thư đến hoặc thư rác.')
+      toast.success(res?.message || 'Đã gửi email test thành công! Vui lòng kiểm tra hộp thư.')
     } catch (err) {
       toast.error('Lỗi khi gửi email test: ' + (err.message || 'Không thể gửi'))
     } finally {
@@ -100,8 +226,10 @@ export function AdminContentPage() {
       .catch(() => setCategoriesList([]))
   }, [])
 
-  async function load() {
-    setLoading(true)
+  async function load(isManualRefresh = false) {
+    if (isManualRefresh) setIsRefreshing(true)
+    else setLoading(true)
+
     try {
       const data = await config.load()
       if (config.single) {
@@ -109,11 +237,15 @@ export function AdminContentPage() {
       } else {
         setItems(Array.isArray(data) ? data : [])
       }
+      if (isManualRefresh) {
+        toast.success(`Đã làm mới danh sách ${config.title}!`)
+      }
     } catch (err) {
       toast.error('Lỗi khi tải dữ liệu: ' + (err.message || 'Không xác định'))
-      setItems([])
+      if (!isManualRefresh) setItems([])
     } finally {
       setLoading(false)
+      setIsRefreshing(false)
     }
   }
 
@@ -121,16 +253,23 @@ export function AdminContentPage() {
     load()
     setCategoryFilter('ALL')
     setSearch('')
+    setCurrentPage(1)
+    setSortBy('DEFAULT')
   }, [section])
 
-  const filtered = useMemo(() => {
+  // Filter and Sort Data
+  const sortedAndFiltered = useMemo(() => {
     if (!Array.isArray(items)) return []
-    return items.filter(item => {
+
+    let list = items.filter(item => {
       if (!item || typeof item !== 'object') return false
 
-      // Filter by category for skills
       if (section === 'skills' && categoryFilter !== 'ALL') {
         if (item.category !== categoryFilter) return false
+      }
+
+      if (section === 'articles' && categoryFilter !== 'ALL') {
+        if (String(item.categoryId) !== String(categoryFilter)) return false
       }
 
       if (!search.trim()) return true
@@ -141,7 +280,34 @@ export function AdminContentPage() {
         return false
       }
     })
-  }, [items, search, categoryFilter, section])
+
+    // Sắp xếp OrderBy
+    return list.sort((a, b) => {
+      if (sortBy === 'NEWEST') {
+        return (b.id || 0) - (a.id || 0)
+      }
+      if (sortBy === 'ORDER') {
+        return (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
+      }
+      // Default: If displayOrder exists use it, otherwise newest first
+      if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+        return a.displayOrder - b.displayOrder
+      }
+      return (b.id || 0) - (a.id || 0)
+    })
+  }, [items, search, categoryFilter, sortBy, section])
+
+  // Paginated Sliced Data
+  const paginatedItems = useMemo(() => {
+    if (config.single) return sortedAndFiltered
+    const start = (currentPage - 1) * pageSize
+    return sortedAndFiltered.slice(start, start + pageSize)
+  }, [sortedAndFiltered, currentPage, pageSize, config.single])
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, categoryFilter, sortBy])
 
   function handleOpenCreate() {
     if (config.single) {
@@ -167,28 +333,39 @@ export function AdminContentPage() {
 
   async function save(e) {
     e.preventDefault()
+    setIsSaving(true)
     try {
       if (config.single) {
-        await updateProfile(editing)
+        const updated = await updateProfile(editing)
+        setItems([updated || editing])
         toast.success('Cập nhật Thông tin Profile thành công!')
       } else if (editing.id) {
-        await updateAdminItem(config.resource, editing.id, editing)
+        const updated = await updateAdminItem(config.resource, editing.id, editing)
+        // Instant optimistic local update
+        setItems(prev => prev.map(i => i.id === editing.id ? { ...i, ...editing, ...(updated || {}) } : i))
         toast.success(`Cập nhật ${config.title} thành công!`)
       } else {
-        await createAdminItem(config.resource, editing)
+        const created = await createAdminItem(config.resource, editing)
+        // Instant optimistic insert
+        setItems(prev => [created || { ...editing, id: Date.now() }, ...prev])
         toast.success(`Thêm mới ${config.title} thành công!`)
       }
       setEditing(null)
+      // Background sync
       load()
     } catch (err) {
       toast.error('Lưu dữ liệu thất bại: ' + (err.message || 'Có lỗi xảy ra'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
   async function remove(id) {
-    if (!confirm('Bạn chắc chắn muốn xóa dữ liệu này?')) return
+    if (!confirm('Bạn chắc chắn muốn xóa bản ghi này? Thao tác này không thể hoàn tác.')) return
     try {
       await deleteAdminItem(config.resource, id)
+      // Instant optimistic removal
+      setItems(prev => prev.filter(i => i.id !== id))
       toast.success(`Đã xóa ${config.title} thành công!`)
       load()
     } catch (err) {
@@ -199,6 +376,7 @@ export function AdminContentPage() {
   async function moderate(item, status) {
     try {
       await moderateComment(item.type, item.id, status)
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, status } : i))
       toast.success(status === 'APPROVED' ? 'Đã phê duyệt bình luận!' : 'Đã từ chối bình luận!')
       load()
     } catch (err) {
@@ -208,218 +386,391 @@ export function AdminContentPage() {
 
   return (
     <div className="admin-page">
+      {/* Heading Bar */}
       <div className="admin-heading">
-        <div>
-          <span>CONTENT MANAGEMENT</span>
+        <div className="admin-heading-left">
+          <span className="admin-badge-category">
+            <Layers size={11} /> QUẢN TRỊ DỮ LIỆU
+          </span>
           <h1>{config.title}</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+        <div className="admin-heading-actions">
+          {/* Refresh Button */}
+          <button
+            type="button"
+            className="admin-btn-secondary"
+            onClick={() => load(true)}
+            disabled={isRefreshing || loading}
+            title="Làm mới dữ liệu từ server"
+          >
+            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+            <span>Làm mới</span>
+          </button>
+
+          {/* Test Mail Button */}
           {section === 'contacts' && (
             <button
               type="button"
               disabled={testingMail}
               onClick={handleTestMail}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'linear-gradient(135deg, #10b981, #06b6d4)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: 8,
-                padding: '8px 16px',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: testingMail ? 'not-allowed' : 'pointer'
-              }}
+              className="admin-btn-test-mail"
             >
-              {testingMail ? <Loader2 className="animate-spin" size={15} /> : <Mail size={15} />}
+              {testingMail ? <Loader2 className="animate-spin" size={14} /> : <Mail size={14} />}
               <span>{testingMail ? 'Đang gửi test...' : 'Test Gửi Email'}</span>
             </button>
           )}
+
+          {/* Primary Create Button */}
           {!config.readonly && (
-            <button onClick={handleOpenCreate}>
-              <Plus /> {config.single ? 'Chỉnh sửa' : 'Thêm mới'}
+            <button className="admin-btn-primary" onClick={handleOpenCreate}>
+              <Plus size={16} />
+              <span>{config.single ? 'Chỉnh sửa hồ sơ' : 'Thêm mới'}</span>
             </button>
           )}
         </div>
       </div>
 
+      {/* Toolbar (Search, Filter, Sort, Count) */}
       <div className="admin-toolbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-            <Search />
-            <input placeholder="Tìm kiếm dữ liệu..." value={search} onChange={e => setSearch(e.target.value)} />
+        <div className="admin-toolbar-left">
+          {/* Search Box */}
+          <div className="admin-search-box">
+            <Search size={15} />
+            <input
+              placeholder="Tìm kiếm dữ liệu..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button type="button" className="clear-search-btn" onClick={() => setSearch('')}>
+                <X size={12} />
+              </button>
+            )}
           </div>
 
+          {/* Category Filter for Skills */}
           {section === 'skills' && (
-            <select
-              value={categoryFilter}
-              onChange={e => setCategoryFilter(e.target.value)}
-              style={{
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#334155',
-                background: '#f8fafc',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="ALL">🔍 Tất cả nhóm kỹ năng</option>
-              {SKILL_CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+            <div className="admin-filter-select-wrap">
+              <Filter size={13} className="filter-icon" />
+              <select
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+              >
+                <option value="ALL">Tất cả nhóm kỹ năng</option>
+                {SKILL_CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Category Filter for Articles */}
+          {section === 'articles' && categoriesList.length > 0 && (
+            <div className="admin-filter-select-wrap">
+              <Filter size={13} className="filter-icon" />
+              <select
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+              >
+                <option value="ALL">Tất cả danh mục bài viết</option>
+                {categoriesList.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Sort By Dropdown */}
+          {!config.single && (
+            <div className="admin-filter-select-wrap">
+              <ArrowUpDown size={13} className="filter-icon" />
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+              >
+                <option value="DEFAULT">Sắp xếp: Mặc định</option>
+                <option value="NEWEST">Sắp xếp: Mới nhất trước</option>
+                <option value="ORDER">Sắp xếp: Theo thứ tự hiển thị</option>
+              </select>
+            </div>
           )}
         </div>
-        <span>{filtered.length} bản ghi</span>
+
+        <div className="admin-toolbar-right">
+          <span className="record-count-badge">
+            <b>{sortedAndFiltered.length}</b> bản ghi
+          </span>
+        </div>
       </div>
 
+      {/* Main Table */}
       {loading ? (
-        <div className="admin-table-skeleton" />
+        <div className="admin-table-skeleton">
+          <div className="admin-skeleton-row" />
+          <div className="admin-skeleton-row" />
+          <div className="admin-skeleton-row" />
+          <div className="admin-skeleton-row" />
+        </div>
       ) : (
-        <div className="admin-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nội dung chính</th>
-                <th>Thông tin</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
+        <div className="admin-table-container">
+          <div className="admin-table-wrap">
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '36px', color: '#94a3b8' }}>
-                    Chưa có bản ghi nào.
-                  </td>
+                  <th style={{ width: '68px', textAlign: 'center' }}>STT</th>
+                  <th>Nội dung chính</th>
+                  <th>Phân loại / Thông tin</th>
+                  <th style={{ width: '130px', textAlign: 'center' }}>Trạng thái</th>
+                  <th style={{ width: '110px', textAlign: 'center' }}>Thao tác</th>
                 </tr>
-              ) : (
-                filtered.map((item, index) => {
-                  const itemTitle = renderCellText(item.title || item.name || item.fullName || item.displayName || item.subject) || 'Bản ghi'
-                  const rawSub = item.slug || item.email || item.headline || (typeof item.content === 'string' ? item.content.replace(/<[^>]*>?/gm, '').slice(0, 80) : '')
-                  const itemSub = renderCellText(rawSub)
+              </thead>
+              <tbody>
+                {paginatedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="admin-empty-table-cell">
+                      <Sparkles size={28} className="empty-icon" />
+                      <strong>Không tìm thấy bản ghi nào</strong>
+                      <p>Thử tìm kiếm với từ khóa khác hoặc bấm nút Thêm mới bên trên.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedItems.map((item, index) => {
+                    // STT chuẩn xác tính theo trang
+                    const stt = (currentPage - 1) * pageSize + index + 1
 
-                  // For articles, resolve category name from categoryId
-                  let itemInfo = '—'
-                  if (section === 'articles' && item.categoryId) {
-                    const matchedCat = categoriesList.find(c => c.id === item.categoryId)
-                    itemInfo = matchedCat ? matchedCat.name : `Danh mục #${item.categoryId}`
-                  } else {
-                    itemInfo = renderCellText(item.category || item.company || item.type || item.technologies || item.location) || '—'
-                  }
+                    const itemTitle = renderCellText(item.title || item.name || item.fullName || item.displayName || item.subject) || 'Bản ghi'
+                    const rawSub = item.slug || item.email || item.headline || (typeof item.content === 'string' ? item.content.replace(/<[^>]*>?/gm, '').slice(0, 80) : '')
+                    const itemSub = renderCellText(rawSub)
 
-                  const itemStatus = renderCellText(item.status) || (item.published === false ? 'DRAFT' : 'ACTIVE')
+                    // Phân loại thông tin
+                    let itemInfo = '—'
+                    if (section === 'articles' && item.categoryId) {
+                      const matchedCat = categoriesList.find(c => c.id === item.categoryId)
+                      itemInfo = matchedCat ? matchedCat.name : `Danh mục #${item.categoryId}`
+                    } else {
+                      itemInfo = renderCellText(item.category || item.company || item.type || item.technologies || item.location) || '—'
+                    }
 
-                  return (
-                    <tr key={item.id || index}>
-                      <td>#{item.id || index + 1}</td>
-                      <td>
-                        <b>{itemTitle}</b>
-                        {itemSub && <small>{itemSub}</small>}
-                      </td>
-                      <td>{itemInfo}</td>
-                      <td>
-                        <span className={`status status-${itemStatus.toLowerCase()}`}>
-                          {itemStatus}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="row-actions">
-                          {section === 'comments' ? (
-                            <>
-                              <button className="approve" title="Phê duyệt" onClick={() => moderate(item, 'APPROVED')}>
-                                <Check />
-                              </button>
-                              <button className="reject" title="Từ chối" onClick={() => moderate(item, 'REJECTED')}>
-                                <X />
-                              </button>
-                            </>
-                          ) : (
-                            !config.readonly && (
+                    // Trạng thái
+                    const rawStatus = item.status || (item.published === false ? 'DRAFT' : 'ACTIVE')
+
+                    return (
+                      <tr key={item.id || index} className="admin-table-row">
+                        <td className="stt-cell">
+                          <span className="stt-number">{stt}</span>
+                        </td>
+                        <td className="main-content-cell">
+                          <div className="cell-title-wrap">
+                            <strong className="cell-title">{itemTitle}</strong>
+                            {item.id && <span className="cell-id-badge" title={`ID: ${item.id}`}>#{item.id}</span>}
+                          </div>
+                          {itemSub && <span className="cell-subtitle">{itemSub}</span>}
+                        </td>
+                        <td className="info-cell">
+                          <span className="info-badge">{itemInfo}</span>
+                        </td>
+                        <td className="status-cell" style={{ textAlign: 'center' }}>
+                          <AdminStatusBadge status={rawStatus} />
+                        </td>
+                        <td className="action-cell" style={{ textAlign: 'center' }}>
+                          <div className="row-actions">
+                            {section === 'comments' ? (
                               <>
-                                <button title="Chỉnh sửa" onClick={() => setEditing({ ...item })}>
-                                  <Edit3 />
+                                <button className="row-btn approve" title="Phê duyệt bình luận" onClick={() => moderate(item, 'APPROVED')}>
+                                  <Check size={14} />
                                 </button>
-                                {!config.single && (
-                                  <button className="danger" title="Xóa" onClick={() => remove(item.id)}>
-                                    <Trash2 />
-                                  </button>
-                                )}
+                                <button className="row-btn reject" title="Từ chối bình luận" onClick={() => moderate(item, 'REJECTED')}>
+                                  <X size={14} />
+                                </button>
                               </>
-                            )
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+                            ) : (
+                              !config.readonly && (
+                                <>
+                                  <button className="row-btn edit" title="Chỉnh sửa" onClick={() => setEditing({ ...item })}>
+                                    <Edit3 size={14} />
+                                  </button>
+                                  {!config.single && (
+                                    <button className="row-btn danger" title="Xóa bản ghi" onClick={() => remove(item.id)}>
+                                      <Trash2 size={14} />
+                                    </button>
+                                  )}
+                                </>
+                              )
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {!config.single && (
+            <AdminPagination
+              currentPage={currentPage}
+              totalItems={sortedAndFiltered.length}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 25, 50, 100]}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize)
+                setCurrentPage(1)
+              }}
+            />
+          )}
         </div>
       )}
 
+      {/* Spacious 900px Edit / Create Modal */}
       {editing && (
-        <div className="admin-modal">
-          <form onSubmit={save}>
-            <header>
-              <div>
-                <span>EDITOR</span>
-                <h2>{editing.id ? 'Cập nhật' : 'Thêm mới'} {config.title}</h2>
-              </div>
-              <button type="button" onClick={() => setEditing(null)}>
-                <X />
-              </button>
-            </header>
-            <div className="admin-form-grid">
-              {config.fields.map(([key, label, type = 'text', options]) => (
-                <label className={type === 'rich' || type === 'textarea' ? 'wide' : ''} key={key}>
-                  {type !== 'checkbox' && <span>{label}</span>}
+        <div className="admin-modal-backdrop" onClick={() => !isSaving && setEditing(null)}>
+          <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
+            <form onSubmit={save}>
+              {/* Modal Header */}
+              <header className="modal-header">
+                <div>
+                  <span className="modal-tag">EDITOR PANEL</span>
+                  <h2>{editing.id ? 'Cập Nhật' : 'Thêm Mới'} {config.title}</h2>
+                </div>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  disabled={isSaving}
+                  onClick={() => setEditing(null)}
+                >
+                  <X size={18} />
+                </button>
+              </header>
 
-                  {type === 'category_select' ? (
-                    <select
-                      value={editing.categoryId || (categoriesList[0]?.id ?? '')}
-                      onChange={e => setEditing({ ...editing, categoryId: Number(e.target.value) })}
-                    >
-                      {categoriesList.map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : type === 'rich' ? (
-                    <RichEditor value={editing[key]} onChange={value => setEditing({ ...editing, [key]: value })} />
-                  ) : type === 'textarea' ? (
-                    <textarea rows="3" value={editing[key] || ''} onChange={e => setEditing({ ...editing, [key]: e.target.value })} />
-                  ) : type === 'select' ? (
-                    <select value={editing[key] || options[0]} onChange={e => setEditing({ ...editing, [key]: e.target.value })}>
-                      {options.map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  ) : type === 'checkbox' ? (
-                    <span className="check-field">
-                      <input type="checkbox" checked={!!editing[key]} onChange={e => setEditing({ ...editing, [key]: e.target.checked })} />
-                      {label}
-                    </span>
+              {/* Modal Body with 2-Column Grid */}
+              <div className="modal-body">
+                <div className="admin-form-grid-modern">
+                  {config.fields.map(([key, label, type = 'text', options, uploadFolder]) => {
+                    const isWide = type === 'rich' || type === 'textarea' || type === 'image_upload'
+
+                    return (
+                      <div
+                        className={`form-field-group ${isWide ? 'full-width' : ''}`}
+                        key={key}
+                      >
+                        {type !== 'checkbox' && type !== 'image_upload' && (
+                          <label className="field-label">
+                            <span>{label}</span>
+                          </label>
+                        )}
+
+                        {/* Category Select */}
+                        {type === 'category_select' ? (
+                          <select
+                            className="admin-select-input"
+                            value={editing.categoryId || (categoriesList[0]?.id ?? '')}
+                            onChange={e => setEditing({ ...editing, categoryId: Number(e.target.value) })}
+                          >
+                            {categoriesList.map(cat => (
+                              <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : type === 'image_upload' ? (
+                          /* Image Upload Component */
+                          <AdminImageUpload
+                            label={label}
+                            value={editing[key] || ''}
+                            folder={uploadFolder || 'portfolio/images'}
+                            onChange={(url) => setEditing({ ...editing, [key]: url })}
+                          />
+                        ) : type === 'rich' ? (
+                          /* Rich Text Editor */
+                          <div className="rich-editor-wrap">
+                            <RichEditor
+                              value={editing[key] || ''}
+                              onChange={value => setEditing({ ...editing, [key]: value })}
+                            />
+                          </div>
+                        ) : type === 'textarea' ? (
+                          <textarea
+                            className="admin-textarea-input"
+                            rows="4"
+                            placeholder={`Nhập ${label.toLowerCase()}...`}
+                            value={editing[key] || ''}
+                            onChange={e => setEditing({ ...editing, [key]: e.target.value })}
+                          />
+                        ) : type === 'select' ? (
+                          <select
+                            className="admin-select-input"
+                            value={editing[key] || options[0]}
+                            onChange={e => setEditing({ ...editing, [key]: e.target.value })}
+                          >
+                            {options.map(o => (
+                              <option key={o} value={o}>{o}</option>
+                            ))}
+                          </select>
+                        ) : type === 'checkbox' ? (
+                          <label className="admin-checkbox-card">
+                            <input
+                              type="checkbox"
+                              checked={!!editing[key]}
+                              onChange={e => setEditing({ ...editing, [key]: e.target.checked })}
+                            />
+                            <span className="checkbox-text">
+                              <strong>{label}</strong>
+                            </span>
+                          </label>
+                        ) : (
+                          <input
+                            className="admin-text-input"
+                            type={type}
+                            placeholder={`Nhập ${label.toLowerCase()}...`}
+                            value={editing[key] ?? ''}
+                            onChange={e =>
+                              setEditing({
+                                ...editing,
+                                [key]: type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value
+                              })
+                            }
+                          />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Sticky Footer */}
+              <footer className="modal-footer">
+                <button
+                  type="button"
+                  className="modal-btn-cancel"
+                  disabled={isSaving}
+                  onClick={() => setEditing(null)}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="modal-btn-save"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      <span>Đang lưu...</span>
+                    </>
                   ) : (
-                    <input type={type} value={editing[key] ?? ''} onChange={e => setEditing({ ...editing, [key]: type === 'number' ? Number(e.target.value) : e.target.value })} />
+                    <>
+                      <Check size={16} />
+                      <span>Lưu thay đổi</span>
+                    </>
                   )}
-                </label>
-              ))}
-            </div>
-            <footer>
-              <button type="button" onClick={() => setEditing(null)}>
-                Hủy
-              </button>
-              <button className="save">
-                <Check /> Lưu thay đổi
-              </button>
-            </footer>
-          </form>
+                </button>
+              </footer>
+            </form>
+          </div>
         </div>
       )}
     </div>

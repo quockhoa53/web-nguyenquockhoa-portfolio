@@ -1,25 +1,64 @@
 import { useEffect, useState } from 'react'
-import { BarChart3, BookOpen, BriefcaseBusiness, ExternalLink, FileText, FolderKanban, Heart, LogOut, Mail, MessageSquare, Route, ShieldCheck, Sparkles, UserRound, Users } from 'lucide-react'
+import {
+  BarChart3,
+  BookOpen,
+  BriefcaseBusiness,
+  ExternalLink,
+  FileText,
+  FolderKanban,
+  Heart,
+  LogOut,
+  Mail,
+  MessageSquare,
+  Route,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  Users,
+  Compass,
+  Zap,
+  Globe
+} from 'lucide-react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { adminLogout, adminMe } from '../services/adminApi'
 import { ErrorBoundary } from '../components/common/ErrorBoundary'
 
-const links = [
-  ['', 'Dashboard', BarChart3],
-  ['users', 'Quản trị viên', ShieldCheck],
-  ['resumes', 'Quản lý CV & Cloud', FileText],
-  ['profile', 'Profile', UserRound],
-  ['skills', 'Năng lực kỹ thuật', BriefcaseBusiness],
-  ['experiences', 'Kinh nghiệm', Route],
-  ['projects', 'Dự án', FolderKanban],
-  ['categories', 'Danh mục', BookOpen],
-  ['articles', 'Kiến thức', BookOpen],
-  ['work-items', 'Quá trình làm việc', Route],
-  ['ai-facts', 'Bộ nhớ AI', Sparkles],
-  ['comments', 'Bình luận', MessageSquare],
-  ['likes', 'Lượt yêu thích', Heart],
-  ['contacts', 'Liên hệ', Mail],
-  ['guests', 'Khách truy cập', Users],
+const NAV_SECTIONS = [
+  {
+    group: 'TỔNG QUAN',
+    items: [
+      ['', 'Dashboard', BarChart3],
+      ['users', 'Quản trị viên & 2FA', ShieldCheck],
+      ['resumes', 'Quản lý CV & Cloud', FileText],
+    ]
+  },
+  {
+    group: 'HỒ SƠ & KINH NGHIỆM',
+    items: [
+      ['profile', 'Thông tin Profile', UserRound],
+      ['skills', 'Năng lực kỹ thuật', BriefcaseBusiness],
+      ['experiences', 'Kinh nghiệm làm việc', Route],
+      ['work-items', 'Quá trình làm việc', Compass],
+    ]
+  },
+  {
+    group: 'DỰ ÁN & BÀI VIẾT',
+    items: [
+      ['projects', 'Dự án tiêu biểu', FolderKanban],
+      ['categories', 'Danh mục kiến thức', BookOpen],
+      ['articles', 'Bài viết kiến thức', FileText],
+      ['ai-facts', 'Bộ nhớ AI Assistant', Sparkles],
+    ]
+  },
+  {
+    group: 'TƯƠNG TÁC & LIÊN HỆ',
+    items: [
+      ['comments', 'Kiểm duyệt bình luận', MessageSquare],
+      ['likes', 'Lượt yêu thích', Heart],
+      ['contacts', 'Tin nhắn liên hệ', Mail],
+      ['guests', 'Khách truy cập', Users],
+    ]
+  }
 ]
 
 export function AdminLayout() {
@@ -50,39 +89,85 @@ export function AdminLayout() {
 
   return (
     <div className="admin-app">
+      {/* Dark Luxury Sidebar */}
       <aside className="admin-sidebar">
+        {/* Brand Header */}
         <div className="admin-logo">
-          <span>&lt;/&gt;</span>
-          <div><b>NQK Admin</b><small>Portfolio workspace</small></div>
+          <div className="admin-logo-monogram">
+            <Zap size={18} />
+          </div>
+          <div className="admin-logo-meta">
+            <b>NQK Admin Pro</b>
+            <small>Workspace &amp; Content Engine</small>
+          </div>
         </div>
 
-        <div className="admin-nav-label">Workspace</div>
-        <nav>
-          {links.map(([to, label, Icon]) => (
-            <NavLink end={to === ''} key={label} to={to}>
-              <Icon /><span>{label}</span><i />
-            </NavLink>
+        {/* Grouped Nav Items */}
+        <nav className="admin-nav-list">
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.group} className="admin-nav-group">
+              <span className="admin-nav-label">{section.group}</span>
+              {section.items.map(([to, label, Icon]) => (
+                <NavLink
+                  end={to === ''}
+                  key={label}
+                  to={to}
+                  className={({ isActive }) => `admin-nav-link ${isActive ? 'active' : ''}`}
+                >
+                  <Icon size={16} />
+                  <span>{label}</span>
+                  <span className="active-glow-indicator" />
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
+        {/* User Footer Card */}
         <div className="admin-account">
-          <div className="admin-avatar">{admin.displayName?.charAt(0)?.toUpperCase() || 'A'}</div>
-          <div><b>{admin.displayName}</b><small>@{admin.username}</small></div>
-          <button onClick={logout} title="Đăng xuất"><LogOut /></button>
+          <div className="admin-avatar">
+            {admin.displayName?.charAt(0)?.toUpperCase() || 'A'}
+          </div>
+          <div className="admin-user-info">
+            <b>{admin.displayName}</b>
+            <small>@{admin.username}</small>
+          </div>
+          <button onClick={logout} className="admin-logout-btn" title="Đăng xuất khỏi hệ thống">
+            <LogOut size={16} />
+          </button>
         </div>
       </aside>
 
+      {/* Main Content Area */}
       <div className="admin-main">
+        {/* Topbar */}
         <header className="admin-topbar">
-          <div>
-            <span className="admin-topbar-tag">Admin Mode</span>
-            <b>Trang quản trị danh mục &amp; nội dung</b>
+          <div className="admin-topbar-left">
+            <span className="admin-topbar-tag">Admin Console</span>
+            <b>Hệ thống Quản trị Nội dung &amp; Trí tuệ Nhân tạo</b>
           </div>
+
           <div className="admin-topbar-actions">
-            <a href="/" target="_blank" rel="noreferrer"><ExternalLink /><span>Xem trang chủ</span></a>
+            <div className="system-live-pill">
+              <span className="live-dot" />
+              <span>Production Live</span>
+            </div>
+
+            <a
+              href="/"
+              target="_blank"
+              rel="noreferrer"
+              className="view-site-btn"
+              title="Xem trang Portfolio ngoài client"
+            >
+              <Globe size={14} />
+              <span>Xem trang chủ</span>
+              <ExternalLink size={12} />
+            </a>
           </div>
         </header>
 
+        {/* Workspace Body */}
         <section className="admin-workspace">
           <ErrorBoundary>
             <Outlet />
