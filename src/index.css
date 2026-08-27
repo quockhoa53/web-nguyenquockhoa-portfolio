@@ -2159,16 +2159,98 @@ button {
 
 .rich-content a {
   color: var(--primary);
-  text-decoration: underline
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color .2s;
+}
+
+.rich-content a:hover {
+  color: var(--primary2, #0284c7);
 }
 
 .rich-content ul,
-.rich-content ol {
-  padding-left: 24px
+.prose-card-wide ul,
+.prose-content-body ul,
+.chat-markdown-renderer ul {
+  list-style: disc !important;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  padding-left: 28px !important;
+  margin: 12px 0 16px !important;
 }
 
-.rich-content li {
-  margin: 7px 0
+.rich-content ol,
+.prose-card-wide ol,
+.prose-content-body ol,
+.chat-markdown-renderer ol {
+  list-style: decimal !important;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  padding-left: 28px !important;
+  margin: 12px 0 16px !important;
+}
+
+.rich-content ul ul,
+.prose-card-wide ul ul,
+.prose-content-body ul ul,
+.chat-markdown-renderer ul ul,
+.rich-content ol ul,
+.prose-card-wide ol ul {
+  list-style: circle !important;
+  list-style-type: circle !important;
+  padding-left: 24px !important;
+  margin: 6px 0 !important;
+}
+
+.rich-content ul ul ul,
+.prose-card-wide ul ul ul,
+.prose-content-body ul ul ul,
+.chat-markdown-renderer ul ul ul {
+  list-style: square !important;
+  list-style-type: square !important;
+  padding-left: 24px !important;
+  margin: 4px 0 !important;
+}
+
+.rich-content li,
+.prose-card-wide li,
+.prose-content-body li,
+.chat-markdown-renderer li {
+  display: list-item !important;
+  margin: 6px 0 !important;
+  padding-left: 4px !important;
+  line-height: 1.75 !important;
+}
+
+.rich-content li::marker,
+.prose-card-wide li::marker,
+.prose-content-body li::marker,
+.chat-markdown-renderer li::marker {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 1.1em;
+}
+
+.rich-content code:not(pre code) {
+  background: var(--muted, #f1f5f9);
+  color: var(--primary, #059669);
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.88em;
+  border: 1px solid var(--border, #e2e8f0);
+}
+
+.dark .rich-content code:not(pre code) {
+  background: #0f172a;
+  color: var(--primary, #10b981);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.rich-content strong,
+.rich-content b {
+  color: var(--text);
+  font-weight: 700;
 }
 
 .frontend-edit-trigger {
