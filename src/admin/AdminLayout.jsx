@@ -19,7 +19,9 @@ import {
   Zap,
   Globe,
   Sun,
-  Moon
+  Moon,
+  Palette,
+  Check
 } from 'lucide-react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { adminLogout, adminMe } from '../services/adminApi'
@@ -63,16 +65,30 @@ const NAV_SECTIONS = [
   }
 ]
 
+const PALETTES = [
+  { id: 'purple', name: 'Electric Violet (Tím Neon Pro)', color: '#a855f7', bg: '#09090e' },
+  { id: 'gold', name: 'Cyber Gold (Vàng Ánh Kim)', color: '#f59e0b', bg: '#0c0b08' },
+  { id: 'cyan', name: 'Ice Cyan (Xanh Băng Sapphire)', color: '#06b6d4', bg: '#060d14' },
+  { id: 'rose', name: 'Crimson Ruby (Đỏ Hồng Ruby)', color: '#f43f5e', bg: '#0f080b' },
+  { id: 'emerald', name: 'Deep Emerald (Ngọc Lục Bảo)', color: '#10b981', bg: '#060f0c' }
+]
+
 export function AdminLayout() {
   const [admin, setAdmin] = useState(null)
   const [loading, setLoading] = useState(true)
   const [dark, setDark] = useState(() => localStorage.getItem('portfolio-theme') !== 'light')
+  const [palette, setPalette] = useState(() => localStorage.getItem('admin-color-palette') || 'purple')
+  const [showPaletteMenu, setShowPaletteMenu] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
     localStorage.setItem('portfolio-theme', dark ? 'dark' : 'light')
   }, [dark])
+
+  useEffect(() => {
+    localStorage.setItem('admin-color-palette', palette)
+  }, [palette])
 
   useEffect(() => {
     adminMe()
@@ -96,8 +112,8 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="admin-app">
-      {/* Dark Luxury Sidebar */}
+    <div className="admin-app" data-palette={palette}>
+      {/* Luxury Sidebar */}
       <aside className="admin-sidebar">
         {/* Brand Header */}
         <div className="admin-logo">
@@ -156,6 +172,45 @@ export function AdminLayout() {
           </div>
 
           <div className="admin-topbar-actions">
+            {/* Color Palette Switcher */}
+            <div className="palette-picker-wrap">
+              <button
+                type="button"
+                className="admin-palette-btn"
+                onClick={() => setShowPaletteMenu(!showPaletteMenu)}
+                title="Đổi phong cách màu sắc giao diện"
+              >
+                <Palette size={15} />
+                <span className="palette-color-dot" style={{ background: PALETTES.find(p => p.id === palette)?.color }} />
+                <span>Màu giao diện</span>
+              </button>
+
+              {showPaletteMenu && (
+                <div className="palette-dropdown-menu" onClick={e => e.stopPropagation()}>
+                  <div className="palette-dropdown-header">
+                    <span>CHỌN TÔNG MÀU QUẢN TRỊ</span>
+                  </div>
+                  <div className="palette-options-list">
+                    {PALETTES.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className={`palette-opt-btn ${palette === p.id ? 'active' : ''}`}
+                        onClick={() => {
+                          setPalette(p.id)
+                          setShowPaletteMenu(false)
+                        }}
+                      >
+                        <span className="opt-color-circle" style={{ background: p.color }} />
+                        <span className="opt-name">{p.name}</span>
+                        {palette === p.id && <Check size={14} className="opt-check" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Theme Toggle Button (Light / Dark) */}
             <button
               type="button"
@@ -187,7 +242,7 @@ export function AdminLayout() {
         </header>
 
         {/* Workspace Body */}
-        <section className="admin-workspace">
+        <section className="admin-workspace" onClick={() => showPaletteMenu && setShowPaletteMenu(false)}>
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
