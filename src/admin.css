@@ -8,22 +8,24 @@
    Light Theme: Nordic Pearl & Crystal Titanium
    ========================================================================== */
 
-:root {
-  /* LIGHT THEME (Nordic Pearl & Crystal Titanium) */
+/* --- 1. LIGHT MODE THEME TOKENS (Default when not in dark-mode) --- */
+:root,
+.admin-app,
+.admin-app.light-mode {
   --adm-bg: #f4f7fb;
   --adm-bg-mesh: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.04) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.04) 0px, transparent 60%);
   --adm-surface: #ffffff;
   --adm-surface-subtle: #f8fafc;
   --adm-surface-hover: #f1f5f9;
   --adm-border: #e2e8f0;
-  --adm-border-subtle: rgba(0, 0, 0, 0.06);
+  --adm-border-subtle: #f1f5f9;
   --adm-border-focus: #7c3aed;
   --adm-text: #0f172a;
   --adm-text-sub: #475569;
   --adm-text-muted: #94a3b8;
   --adm-sidebar-bg: #0c0c12;
   --adm-sidebar-text: #a1a1aa;
-  --adm-topbar-bg: rgba(255, 255, 255, 0.85);
+  --adm-topbar-bg: rgba(255, 255, 255, 0.88);
   --adm-card-shadow: 0 10px 30px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
   --adm-primary: #7c3aed;
   --adm-primary-glow: rgba(124, 58, 237, 0.25);
@@ -31,9 +33,69 @@
   --adm-accent: #6366f1;
 }
 
+/* Light Mode Palettes (Accent colors only, keeping light surface) */
+.admin-app.light-mode[data-palette="purple"] {
+  --adm-primary: #7c3aed;
+  --adm-primary-glow: rgba(124, 58, 237, 0.25);
+  --adm-primary-grad: linear-gradient(135deg, #a855f7, #6366f1);
+  --adm-accent: #6366f1;
+}
+
+.admin-app.light-mode[data-palette="gold"] {
+  --adm-primary: #d97706;
+  --adm-primary-glow: rgba(217, 119, 6, 0.25);
+  --adm-primary-grad: linear-gradient(135deg, #f59e0b, #d97706);
+  --adm-accent: #ea580c;
+}
+
+.admin-app.light-mode[data-palette="cyan"] {
+  --adm-primary: #0284c7;
+  --adm-primary-glow: rgba(2, 132, 199, 0.25);
+  --adm-primary-grad: linear-gradient(135deg, #06b6d4, #0284c7);
+  --adm-accent: #0284c7;
+}
+
+.admin-app.light-mode[data-palette="rose"] {
+  --adm-primary: #e11d48;
+  --adm-primary-glow: rgba(225, 29, 72, 0.25);
+  --adm-primary-grad: linear-gradient(135deg, #f43f5e, #e11d48);
+  --adm-accent: #e11d48;
+}
+
+.admin-app.light-mode[data-palette="emerald"] {
+  --adm-primary: #059669;
+  --adm-primary-glow: rgba(5, 150, 105, 0.25);
+  --adm-primary-grad: linear-gradient(135deg, #10b981, #059669);
+  --adm-accent: #059669;
+}
+
+/* --- 2. DARK MODE THEME TOKENS (When .dark-mode or html.dark is present) --- */
+.dark .admin-app,
+.admin-app.dark-mode {
+  --adm-bg: #08080c;
+  --adm-bg-mesh: radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.12) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.09) 0px, transparent 60%);
+  --adm-surface: #101017;
+  --adm-surface-subtle: #171722;
+  --adm-surface-hover: #1f1f2e;
+  --adm-border: rgba(255, 255, 255, 0.08);
+  --adm-border-subtle: rgba(255, 255, 255, 0.04);
+  --adm-border-focus: #a855f7;
+  --adm-text: #fafafa;
+  --adm-text-sub: #a1a1aa;
+  --adm-text-muted: #71717a;
+  --adm-sidebar-bg: #0a0a0f;
+  --adm-sidebar-text: #a1a1aa;
+  --adm-topbar-bg: rgba(10, 10, 15, 0.85);
+  --adm-card-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --adm-primary: #c084fc;
+  --adm-primary-glow: rgba(168, 85, 247, 0.35);
+  --adm-primary-grad: linear-gradient(135deg, #c084fc 0%, #7c3aed 100%);
+  --adm-accent: #818cf8;
+}
+
 /* Palette 1 (Default): Electric Violet / Raycast Jet Black */
-.admin-app[data-palette="purple"],
-.dark .admin-app[data-palette="purple"] {
+.dark .admin-app[data-palette="purple"],
+.admin-app.dark-mode[data-palette="purple"] {
   --adm-bg: #08080c;
   --adm-bg-mesh: radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.12) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.09) 0px, transparent 60%);
   --adm-surface: #101017;
@@ -56,8 +118,8 @@
 }
 
 /* Palette 2: Cyber Gold & Warm Obsidian */
-.admin-app[data-palette="gold"],
-.dark .admin-app[data-palette="gold"] {
+.dark .admin-app[data-palette="gold"],
+.admin-app.dark-mode[data-palette="gold"] {
   --adm-bg: #0d0c09;
   --adm-bg-mesh: radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.12) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(234, 88, 12, 0.09) 0px, transparent 60%);
   --adm-surface: #14130f;
@@ -80,8 +142,8 @@
 }
 
 /* Palette 3: Ice Cyan & Midnight Sapphire */
-.admin-app[data-palette="cyan"],
-.dark .admin-app[data-palette="cyan"] {
+.dark .admin-app[data-palette="cyan"],
+.admin-app.dark-mode[data-palette="cyan"] {
   --adm-bg: #050b13;
   --adm-bg-mesh: radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.12) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.09) 0px, transparent 60%);
   --adm-surface: #0a1320;
@@ -104,8 +166,8 @@
 }
 
 /* Palette 4: Crimson Ruby */
-.admin-app[data-palette="rose"],
-.dark .admin-app[data-palette="rose"] {
+.dark .admin-app[data-palette="rose"],
+.admin-app.dark-mode[data-palette="rose"] {
   --adm-bg: #0e070a;
   --adm-bg-mesh: radial-gradient(at 0% 0%, rgba(244, 63, 94, 0.12) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(217, 70, 239, 0.09) 0px, transparent 60%);
   --adm-surface: #170b11;
@@ -128,8 +190,8 @@
 }
 
 /* Palette 5: Deep Emerald */
-.admin-app[data-palette="emerald"],
-.dark .admin-app[data-palette="emerald"] {
+.dark .admin-app[data-palette="emerald"],
+.admin-app.dark-mode[data-palette="emerald"] {
   --adm-bg: #060b09;
   --adm-bg-mesh: radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 60%), radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.09) 0px, transparent 60%);
   --adm-surface: #0a1511;
@@ -562,111 +624,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-/* Palette Switcher Button & Dropdown */
-.palette-picker-wrap {
-  position: relative;
-}
-
-.admin-palette-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 12px;
-  border-radius: 9px;
-  background: var(--adm-surface);
-  border: 1px solid var(--adm-border);
-  color: var(--adm-text);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--adm-card-shadow);
-  transition: all 0.2s;
-}
-
-.admin-palette-btn:hover {
-  border-color: var(--adm-primary);
-}
-
-.palette-color-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  box-shadow: 0 0 6px currentColor;
-}
-
-.palette-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 260px;
-  background: var(--adm-surface);
-  border: 1px solid var(--adm-border);
-  border-radius: 14px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  padding: 8px;
-  z-index: 60;
-  animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.palette-dropdown-header {
-  padding: 6px 8px 8px;
-  font-size: 9.5px;
-  font-weight: 800;
-  color: var(--adm-text-muted);
-  letter-spacing: 0.1em;
-  border-bottom: 1px solid var(--adm-border-subtle);
-  margin-bottom: 4px;
-}
-
-.palette-options-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.palette-opt-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: transparent;
-  border: none;
-  color: var(--adm-text);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s;
-}
-
-.palette-opt-btn:hover {
-  background: var(--adm-surface-hover);
-}
-
-.palette-opt-btn.active {
-  background: var(--adm-surface-subtle);
-  color: var(--adm-primary);
-  font-weight: 700;
-}
-
-.opt-color-circle {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 0 8px currentColor;
-}
-
-.opt-name {
-  flex: 1;
-}
-
-.opt-check {
-  color: var(--adm-primary);
 }
 
 /* Theme Toggle Button */
@@ -2022,6 +1979,267 @@
   color: var(--adm-text-sub);
 }
 
+/* --- 3. SETTINGS PAGE STYLES --- */
+.admin-settings-section {
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: 18px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: var(--adm-card-shadow);
+}
+
+.settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--adm-border-subtle);
+}
+
+.settings-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--adm-surface-subtle);
+  border: 1px solid var(--adm-border);
+  display: grid;
+  place-items: center;
+  color: var(--adm-primary);
+  flex-shrink: 0;
+}
+
+.settings-section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--adm-text);
+}
+
+.settings-section-header p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--adm-text-sub);
+}
+
+/* Theme Mode Switcher Cards (Light vs Dark) */
+.settings-theme-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.theme-mode-card {
+  border: 2px solid var(--adm-border);
+  border-radius: 16px;
+  padding: 16px;
+  background: var(--adm-surface-subtle);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-mode-card:hover {
+  border-color: var(--adm-primary);
+  transform: translateY(-2px);
+}
+
+.theme-mode-card.selected {
+  border-color: var(--adm-primary);
+  box-shadow: 0 0 0 2px var(--adm-primary-glow), var(--adm-card-shadow);
+}
+
+.theme-mode-preview {
+  height: 100px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  border: 1px solid var(--adm-border);
+}
+
+.preview-mini-sidebar {
+  width: 32px;
+  height: 100%;
+}
+
+.preview-mini-main {
+  flex: 1;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preview-mini-topbar {
+  height: 12px;
+  border-radius: 4px;
+}
+
+.preview-mini-card {
+  flex: 1;
+  border-radius: 6px;
+}
+
+.theme-mode-meta strong {
+  font-size: 13.5px;
+  color: var(--adm-text);
+}
+
+.theme-mode-meta small {
+  font-size: 11.5px;
+  color: var(--adm-text-sub);
+  display: block;
+  margin-top: 2px;
+}
+
+/* Color Palettes Grid */
+.settings-palettes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.palette-card-option {
+  border: 1px solid var(--adm-border);
+  border-radius: 14px;
+  background: var(--adm-surface-subtle);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+
+.palette-card-option:hover {
+  border-color: var(--adm-primary);
+  transform: translateY(-2px);
+}
+
+.palette-card-option.active {
+  border-color: var(--adm-primary);
+  box-shadow: 0 0 0 2px var(--adm-primary-glow);
+}
+
+.palette-card-top {
+  position: relative;
+  height: 24px;
+}
+
+.palette-color-preview-bar {
+  width: 100%;
+  height: 100%;
+}
+
+.palette-active-pill {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.palette-card-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.palette-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.palette-dot-glow {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.palette-card-title-row strong {
+  font-size: 13px;
+  color: var(--adm-text);
+}
+
+.palette-card-body small {
+  font-size: 11px;
+  color: var(--adm-text-muted);
+  line-height: 1.4;
+}
+
+/* Service Status Cards */
+.settings-services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.service-status-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--adm-surface-subtle);
+  border: 1px solid var(--adm-border);
+  border-radius: 12px;
+}
+
+.service-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.service-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.service-card-info strong {
+  font-size: 12.5px;
+  color: var(--adm-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.service-card-info small {
+  font-size: 10.5px;
+  color: var(--adm-text-muted);
+}
+
+.service-pill {
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.service-pill.live {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
 /* --- Skeleton Loading States --- */
 .admin-table-skeleton {
   display: flex;
@@ -2100,6 +2318,9 @@
     padding: 20px 16px;
   }
   .admin-form-grid-modern {
+    grid-template-columns: 1fr;
+  }
+  .settings-theme-cards-grid {
     grid-template-columns: 1fr;
   }
   .toast-container {
