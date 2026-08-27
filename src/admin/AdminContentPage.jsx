@@ -15,7 +15,14 @@ import {
   Layers,
   Sparkles,
   Eye,
-  ExternalLink
+  ExternalLink,
+  Bot,
+  BrainCircuit,
+  Lightbulb,
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare,
+  TrendingUp
 } from 'lucide-react'
 import { useToast } from '../components/common/ToastContext'
 import {
@@ -203,12 +210,51 @@ export function AdminContentPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [testingMail, setTestingMail] = useState(false)
+  const [aiInsights, setAiInsights] = useState(null)
+  const [loadingInsights, setLoadingInsights] = useState(false)
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
   const toast = useToast()
+  const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
+
+  // Fetch AI Learning Insights when on ai-facts section
+  useEffect(() => {
+    if (section === 'ai-facts') {
+      setLoadingInsights(true)
+      fetch(`${CHATBOT_API}/api/admin/ai-insights`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.data) setAiInsights(res.data)
+        })
+        .catch(() => {})
+        .finally(() => setLoadingInsights(false))
+    } else {
+      setAiInsights(null)
+    }
+  }, [section])
+
+  async function handleAdoptFact(fact) {
+    try {
+      const created = await createAdminItem('ai-facts', {
+        category: fact.category,
+        title: fact.title,
+        content: fact.content,
+        isActive: true,
+        displayOrder: items.length + 1
+      })
+      setItems(prev => [created || { ...fact, id: Date.now(), isActive: true }, ...prev])
+      toast.success(`Đã nạp thành công "${fact.title}" vào Bộ nhớ AI!`)
+      setAiInsights(prev => prev ? {
+        ...prev,
+        suggested_facts: prev.suggested_facts.filter(f => f.title !== fact.title)
+      } : null)
+    } catch (err) {
+      toast.error('Lỗi khi nạp Fact: ' + err.message)
+    }
+  }
 
   async function handleTestMail() {
     setTestingMail(true)
@@ -433,6 +479,115 @@ export function AdminContentPage() {
           )}
         </div>
       </div>
+
+      {/* AI Continuous Learning & Intelligence Center Banner (When in ai-facts) */}
+      {section === 'ai-facts' && (
+        <div className="ai-learning-center">
+          <div className="ai-learning-header">
+            <div className="ai-learning-title-box">
+              <div className="ai-learning-icon-glow">
+                <BrainCircuit size={20} />
+              </div>
+              <div>
+                <h3>Trung Tâm Trí Tuệ & Tự Học Của AI Assistant</h3>
+                <p>Theo dõi phản hồi người dùng, phân tích khoảng trống tri thức và đúc kết Fact mới vào bộ nhớ</p>
+              </div>
+            </div>
+            {loadingInsights && (
+              <span className="admin-status-badge info">
+                <Loader2 className="animate-spin" size={12} /> Đang cập nhật tri thức...
+              </span>
+            )}
+          </div>
+
+          {aiInsights && (
+            <>
+              {/* Insight Stat Metrics */}
+              <div className="ai-insights-grid">
+                <div className="ai-insight-card">
+                  <span className="ai-insight-label">
+                    <MessageSquare size={13} /> Hội thoại & Tin nhắn
+                  </span>
+                  <span className="ai-insight-val">{aiInsights.total_conversations || 0}</span>
+                  <span className="ai-insight-sub">{aiInsights.total_messages || 0} lượt trao đổi ghi nhận</span>
+                </div>
+
+                <div className="ai-insight-card">
+                  <span className="ai-insight-label">
+                    <ThumbsUp size={13} style={{ color: '#10b981' }} /> Độ hài lòng người dùng
+                  </span>
+                  <span className="ai-insight-val" style={{ color: '#10b981' }}>
+                    {aiInsights.satisfaction_rate || 100}%
+                  </span>
+                  <span className="ai-insight-sub">
+                    👍 {aiInsights.positive_ratings || 0} hữu ích &nbsp;|&nbsp; 👎 {aiInsights.negative_ratings || 0} chưa hài lòng
+                  </span>
+                </div>
+
+                <div className="ai-insight-card">
+                  <span className="ai-insight-label">
+                    <Lightbulb size={13} style={{ color: 'var(--adm-primary)' }} /> Tri thức đúc kết
+                  </span>
+                  <span className="ai-insight-val" style={{ color: 'var(--adm-primary)' }}>
+                    {aiInsights.suggested_facts?.length || 0}
+                  </span>
+                  <span className="ai-insight-sub">Đề xuất mới từ câu hỏi thực tế</span>
+                </div>
+              </div>
+
+              {/* AI Suggested Facts for 1-Click Adoption */}
+              {aiInsights.suggested_facts && aiInsights.suggested_facts.length > 0 && (
+                <div className="ai-suggestions-section">
+                  <div className="ai-suggestions-title">
+                    <Sparkles size={14} style={{ color: 'var(--adm-primary)' }} />
+                    <span>Gợi ý nạp Fact mới (Đúc kết từ hội thoại của khách truy cập):</span>
+                  </div>
+
+                  <div className="ai-suggested-facts-grid">
+                    {aiInsights.suggested_facts.map((sug, idx) => (
+                      <div key={idx} className="ai-suggested-fact-card">
+                        <div>
+                          <span className="suggested-fact-tag">{sug.category}</span>
+                          <h4 className="suggested-fact-title">{sug.title}</h4>
+                          <p className="suggested-fact-content">{sug.content}</p>
+                          {sug.reason && (
+                            <p className="suggested-fact-reason">
+                              <span>💡 {sug.reason}</span>
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-adopt-fact"
+                          onClick={() => handleAdoptFact(sug)}
+                        >
+                          <Plus size={13} />
+                          <span>Nạp vào Bộ nhớ AI (1-Click)</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Top Inquiries */}
+              {aiInsights.top_inquiries && aiInsights.top_inquiries.length > 0 && (
+                <div className="ai-top-inquiries-box">
+                  <span className="inquiry-label">
+                    <TrendingUp size={12} /> Chủ đề khách hay hỏi nhất:
+                  </span>
+                  {aiInsights.top_inquiries.map((inq, idx) => (
+                    <span key={idx} className="inquiry-pill">
+                      <span>"{inq.query}"</span>
+                      {inq.count > 1 && <span className="inquiry-count">×{inq.count}</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Toolbar (Search, Filter, Sort, Count) */}
       <div className="admin-toolbar">

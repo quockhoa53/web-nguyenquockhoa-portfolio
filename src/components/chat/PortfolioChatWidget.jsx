@@ -15,7 +15,9 @@ import {
   MicOff,
   Volume2,
   VolumeX,
-  Square
+  Square,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react'
 import { getProjects, getKnowledgeArticles, getResumes } from '../../services/portfolioApi'
 import { ProjectChatCard } from './ProjectChatCard'
@@ -70,6 +72,8 @@ function parseContactConfirm(content) {
 
 const ChatMessageItem = memo(function ChatMessageItem({
   message,
+  messageIndex,
+  sessionId,
   projectsList,
   articlesList,
   resumesList,
@@ -78,6 +82,26 @@ const ChatMessageItem = memo(function ChatMessageItem({
   onSpeak
 }) {
   const { text, contactData } = useMemo(() => parseContactConfirm(message.content), [message.content])
+  const [feedbackRating, setFeedbackRating] = useState(null)
+
+  const handleFeedback = useCallback(async (ratingVal) => {
+    if (feedbackRating === ratingVal) return
+    setFeedbackRating(ratingVal)
+    try {
+      await fetch(`${CHATBOT_API}/api/chat/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          message_index: messageIndex,
+          rating: ratingVal,
+          comment: ''
+        })
+      })
+    } catch {
+      // offline silent fallback
+    }
+  }, [sessionId, messageIndex, feedbackRating])
 
   const markdownComponents = useMemo(() => ({
     table: ({ children, ...props }) => (
@@ -181,6 +205,7 @@ const ChatMessageItem = memo(function ChatMessageItem({
             {message.role === 'assistant' && text && (
               <div className="msg-toolbar">
                 <button
+                  type="button"
                   className={`msg-speak-btn ${isSpeaking ? 'speaking' : ''}`}
                   onClick={() => onSpeak?.(text, message.id || text.slice(0, 30))}
                   title={isSpeaking ? 'Dừng đọc' : 'Nghe giọng đọc AI (Tiếng Việt)'}
@@ -189,6 +214,27 @@ const ChatMessageItem = memo(function ChatMessageItem({
                   {isSpeaking ? <Square size={11} className="stop-icon" /> : <Volume2 size={12} />}
                   <span>{isSpeaking ? 'Dừng đọc' : 'Nghe'}</span>
                 </button>
+
+                <div className="msg-feedback-group">
+                  <button
+                    type="button"
+                    className={`msg-feedback-btn ${feedbackRating === 1 ? 'active-up' : ''}`}
+                    onClick={() => handleFeedback(1)}
+                    title="Câu trả lời hữu ích 👍"
+                    aria-label="Hữu ích"
+                  >
+                    <ThumbsUp size={11} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`msg-feedback-btn ${feedbackRating === -1 ? 'active-down' : ''}`}
+                    onClick={() => handleFeedback(-1)}
+                    title="Chưa đúng ý / Cần cải thiện 👎"
+                    aria-label="Chưa đúng ý"
+                  >
+                    <ThumbsDown size={11} />
+                  </button>
+                </div>
               </div>
             )}
           </>
@@ -504,6 +550,8 @@ export function PortfolioChatWidget() {
               <ChatMessageItem
                 key={m.id || idx}
                 message={m}
+                messageIndex={idx}
+                sessionId={sessionId}
                 projectsList={projectsList}
                 articlesList={articlesList}
                 resumesList={resumesList}
