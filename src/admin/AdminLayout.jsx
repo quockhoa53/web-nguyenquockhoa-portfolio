@@ -17,7 +17,9 @@ import {
   Users,
   Compass,
   Zap,
-  Globe
+  Globe,
+  Sun,
+  Moon
 } from 'lucide-react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { adminLogout, adminMe } from '../services/adminApi'
@@ -64,7 +66,13 @@ const NAV_SECTIONS = [
 export function AdminLayout() {
   const [admin, setAdmin] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [dark, setDark] = useState(() => localStorage.getItem('portfolio-theme') !== 'light')
   const navigate = useNavigate()
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('portfolio-theme', dark ? 'dark' : 'light')
+  }, [dark])
 
   useEffect(() => {
     adminMe()
@@ -148,6 +156,17 @@ export function AdminLayout() {
           </div>
 
           <div className="admin-topbar-actions">
+            {/* Theme Toggle Button (Light / Dark) */}
+            <button
+              type="button"
+              className="admin-theme-toggle-btn"
+              onClick={() => setDark(!dark)}
+              title={dark ? 'Chuyển sang Giao diện Sáng (Light Mode)' : 'Chuyển sang Giao diện Tối Độc Bản (Dark Mode)'}
+            >
+              {dark ? <Sun size={15} className="theme-icon sun" /> : <Moon size={15} className="theme-icon moon" />}
+              <span className="theme-text">{dark ? 'Chế độ Sáng' : 'Chế độ Tối'}</span>
+            </button>
+
             <div className="system-live-pill">
               <span className="live-dot" />
               <span>Production Live</span>
