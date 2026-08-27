@@ -13,7 +13,9 @@ import {
   ArrowUpDown,
   Filter,
   Layers,
-  Sparkles
+  Sparkles,
+  Eye,
+  ExternalLink
 } from 'lucide-react'
 import { useToast } from '../components/common/ToastContext'
 import {
@@ -193,6 +195,7 @@ export function AdminContentPage() {
   const [items, setItems] = useState([])
   const [categoriesList, setCategoriesList] = useState([])
   const [editing, setEditing] = useState(null)
+  const [viewingItem, setViewingItem] = useState(null)
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('ALL')
   const [sortBy, setSortBy] = useState('DEFAULT') // 'DEFAULT' | 'NEWEST' | 'ORDER'
@@ -575,6 +578,14 @@ export function AdminContentPage() {
                         </td>
                         <td className="action-cell" style={{ textAlign: 'center' }}>
                           <div className="row-actions">
+                            <button
+                              type="button"
+                              className="row-btn view"
+                              title="Xem chi tiết"
+                              onClick={() => setViewingItem(item)}
+                            >
+                              <Eye size={14} />
+                            </button>
                             {section === 'comments' ? (
                               <>
                                 <button className="row-btn approve" title="Phê duyệt bình luận" onClick={() => moderate(item, 'APPROVED')}>
@@ -770,6 +781,160 @@ export function AdminContentPage() {
                 </button>
               </footer>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Detail View Modal */}
+      {viewingItem && (
+        <div className="admin-modal-backdrop" onClick={() => setViewingItem(null)}>
+          <div className="admin-modal-card" style={{ maxWidth: 960 }} onClick={e => e.stopPropagation()}>
+            <header className="modal-header">
+              <div>
+                <span className="modal-tag">CHI TIẾT DỮ LIỆU</span>
+                <h2>{viewingItem.title || viewingItem.name || viewingItem.company || config.title} {viewingItem.id && `#${viewingItem.id}`}</h2>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setViewingItem(null)}
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="modal-body">
+              {/* Meta summary grid */}
+              <div className="detail-view-meta-grid">
+                {viewingItem.id && (
+                  <div className="detail-meta-item">
+                    <span className="detail-meta-label">Mã ID</span>
+                    <span className="detail-meta-val">#{viewingItem.id}</span>
+                  </div>
+                )}
+                <div className="detail-meta-item">
+                  <span className="detail-meta-label">Trạng thái</span>
+                  <div>
+                    <AdminStatusBadge status={viewingItem.status || (viewingItem.published === false ? 'DRAFT' : 'ACTIVE')} />
+                  </div>
+                </div>
+                {(viewingItem.category || viewingItem.categoryId) && (
+                  <div className="detail-meta-item">
+                    <span className="detail-meta-label">Chuyên mục</span>
+                    <span className="detail-meta-val">
+                      {categoriesList.find(c => c.id === viewingItem.categoryId)?.name || viewingItem.category || '—'}
+                    </span>
+                  </div>
+                )}
+                {viewingItem.createdAt && (
+                  <div className="detail-meta-item">
+                    <span className="detail-meta-label">Ngày tạo</span>
+                    <span className="detail-meta-val">{new Date(viewingItem.createdAt).toLocaleString('vi-VN')}</span>
+                  </div>
+                )}
+                {viewingItem.updatedAt && (
+                  <div className="detail-meta-item">
+                    <span className="detail-meta-label">Cập nhật lần cuối</span>
+                    <span className="detail-meta-val">{new Date(viewingItem.updatedAt).toLocaleString('vi-VN')}</span>
+                  </div>
+                )}
+                {viewingItem.slug && (
+                  <div className="detail-meta-item">
+                    <span className="detail-meta-label">Đường dẫn Slug</span>
+                    <span className="detail-meta-val" style={{ fontFamily: 'monospace', fontSize: 12 }}>{viewingItem.slug}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cover / Image Preview */}
+              {(viewingItem.thumbnailUrl || viewingItem.coverUrl || viewingItem.imageUrl || viewingItem.avatarUrl) && (
+                <div className="detail-view-image-preview">
+                  <img
+                    src={viewingItem.thumbnailUrl || viewingItem.coverUrl || viewingItem.imageUrl || viewingItem.avatarUrl}
+                    alt="Preview"
+                  />
+                </div>
+              )}
+
+              {/* Summary */}
+              {viewingItem.summary && (
+                <div style={{ marginBottom: 20 }}>
+                  <h4 style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--adm-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tóm tắt ngắn gọn</h4>
+                  <p style={{ margin: 0, padding: 14, background: 'var(--adm-surface-subtle)', borderRadius: 10, border: '1px solid var(--adm-border)', fontSize: 13.5, lineHeight: 1.6 }}>
+                    {viewingItem.summary}
+                  </p>
+                </div>
+              )}
+
+              {/* Full Rich Content or Raw Content */}
+              {(viewingItem.content || viewingItem.description || viewingItem.message) && (
+                <div>
+                  <h4 style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--adm-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nội dung chi tiết</h4>
+                  <div
+                    className="detail-view-rich-content"
+                    dangerouslySetInnerHTML={{ __html: viewingItem.content || viewingItem.description || viewingItem.message }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <footer className="modal-footer">
+              {/* Public view button */}
+              {section === 'articles' && viewingItem.slug && (
+                <a
+                  href={`/knowledge/${viewingItem.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="admin-btn-secondary"
+                >
+                  <ExternalLink size={14} />
+                  <span>Xem trang bài viết</span>
+                </a>
+              )}
+              {section === 'projects' && viewingItem.id && (
+                <a
+                  href={`/projects/${viewingItem.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="admin-btn-secondary"
+                >
+                  <ExternalLink size={14} />
+                  <span>Xem trang dự án</span>
+                </a>
+              )}
+              {section === 'work-items' && (viewingItem.slug || viewingItem.id) && (
+                <a
+                  href={`/work-process/${viewingItem.slug || viewingItem.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="admin-btn-secondary"
+                >
+                  <ExternalLink size={14} />
+                  <span>Xem quy trình</span>
+                </a>
+              )}
+              {!config.readonly && (
+                <button
+                  type="button"
+                  className="admin-btn-primary"
+                  onClick={() => {
+                    const toEdit = { ...viewingItem }
+                    setViewingItem(null)
+                    setEditing(toEdit)
+                  }}
+                >
+                  <Edit3 size={14} />
+                  <span>Chỉnh sửa bản ghi</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="modal-btn-cancel"
+                onClick={() => setViewingItem(null)}
+              >
+                Đóng
+              </button>
+            </footer>
           </div>
         </div>
       )}
