@@ -216,53 +216,39 @@ export function AdminContentPage() {
   const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
 
   const DEFAULT_AI_INSIGHTS = useMemo(() => ({
-    total_conversations: 18,
-    total_messages: 54,
-    positive_ratings: 16,
-    negative_ratings: 1,
-    satisfaction_rate: 94,
-    top_inquiries: [
-      { query: "Kinh nghiệm làm việc & dự án tiêu biểu", count: 8 },
-      { query: "Khả năng nhận làm dự án Freelance & AI", count: 5 },
-      { query: "Kiến trúc Microservices & Database Indexing", count: 4 },
-      { query: "Tải CV & thông tin liên hệ của Khoa", count: 3 }
-    ],
-    suggested_facts: [
-      {
-        category: "Dịch vụ & Hợp tác",
-        title: "Nhận dự án Freelance & Tư vấn kiến trúc AI / Full-stack",
-        content: "Nguyễn Quốc Khoa sẵn sàng nhận các dự án phát triển phần mềm Freelance, tư vấn tối ưu hóa cơ sở dữ liệu, xây dựng hệ thống AI Agent và Chatbot thông minh cho doanh nghiệp vừa và nhỏ.",
-        reason: "Nhiều khách hàng hỏi về khả năng nhận dự án ngoài giờ & tư vấn kỹ thuật."
-      },
-      {
-        category: "Kinh nghiệm & Kỹ năng",
-        title: "Kinh nghiệm thực chiến Microservices & Docker / Kubernetes",
-        content: "Nguyễn Quốc Khoa có kinh nghiệm xây dựng hệ thống phân tán chịu tải cao (High Concurrency), đóng gói container với Docker, cấu hình CI/CD tự động và triển khai cụm dịch vụ an toàn trên Cloud.",
-        reason: "Nhà tuyển dụng & Tech Lead hay quan tâm đến kỹ năng DevOps & Microservices."
-      }
-    ]
+    total_conversations: 0,
+    total_messages: 0,
+    positive_ratings: 0,
+    negative_ratings: 0,
+    satisfaction_rate: 100,
+    top_inquiries: [],
+    suggested_facts: []
   }), [])
 
   const [aiInsights, setAiInsights] = useState(DEFAULT_AI_INSIGHTS)
   const [loadingInsights, setLoadingInsights] = useState(false)
 
+  const fetchLiveInsights = useCallback(async () => {
+    setLoadingInsights(true)
+    try {
+      const res = await fetch(`${CHATBOT_API}/api/admin/ai-insights`)
+      const data = await res.json()
+      if (data.data) {
+        setAiInsights(data.data)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingInsights(false)
+    }
+  }, [CHATBOT_API])
+
   // Fetch AI Learning Insights when on ai-facts section
   useEffect(() => {
     if (section === 'ai-facts') {
-      setLoadingInsights(true)
-      fetch(`${CHATBOT_API}/api/admin/ai-insights`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.data && res.data.total_conversations !== undefined) {
-            setAiInsights(res.data)
-          }
-        })
-        .catch(() => {
-          setAiInsights(DEFAULT_AI_INSIGHTS)
-        })
-        .finally(() => setLoadingInsights(false))
+      fetchLiveInsights()
     }
-  }, [section, DEFAULT_AI_INSIGHTS])
+  }, [section, fetchLiveInsights])
 
   async function handleAdoptFact(fact) {
     try {
@@ -536,14 +522,20 @@ export function AdminContentPage() {
               </div>
               <div>
                 <h3>Trung Tâm Trí Tuệ & Tự Học Của AI Assistant</h3>
-                <p>Theo dõi phản hồi người dùng, phân tích khoảng trống tri thức và đúc kết Fact mới vào bộ nhớ</p>
+                <p>Tự động phân tích hội thoại người dùng, phát hiện khoảng trống tri thức và đúc kết Fact mới</p>
               </div>
             </div>
-            {loadingInsights && (
-              <span className="admin-status-badge info">
-                <Loader2 className="animate-spin" size={12} /> Đang cập nhật tri thức...
-              </span>
-            )}
+            <button
+              type="button"
+              className="admin-btn-secondary"
+              style={{ fontSize: 12, padding: '6px 14px' }}
+              onClick={fetchLiveInsights}
+              disabled={loadingInsights}
+              title="Phân tích lại hội thoại và làm mới gợi ý từ AI"
+            >
+              <RefreshCw size={13} className={loadingInsights ? 'animate-spin' : ''} />
+              <span>{loadingInsights ? 'Đang phân tích...' : 'Làm mới phân tích AI'}</span>
+            </button>
           </div>
 
           {aiInsights && (
