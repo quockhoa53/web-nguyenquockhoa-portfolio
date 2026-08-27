@@ -88,10 +88,12 @@ const ChatMessageItem = memo(function ChatMessageItem({
     a: ({ href, children, ...props }) => {
       if (!href) return <span>{children}</span>
 
-      // Normalize path (handle both full URLs and relative paths)
+      // Normalize path (handle full URLs with .vercel.app, .vercel.com, localhost or relative paths)
       let path = href
-      if (path.includes('nguyenquockhoaportfolio.vercel.app')) {
-        path = path.replace(/https?:\/\/nguyenquockho\.vercel\.app/, '')
+      // Strip any protocol and portfolio domain variations
+      path = path.replace(/^https?:\/\/[^/]*(?:vercel\.(?:app|com)|nguyenquockhoa|localhost:\d+)/i, '')
+      if (!path.startsWith('/') && !path.startsWith('http')) {
+        path = '/' + path
       }
 
       // 1. Match Project Card: /projects/:id
