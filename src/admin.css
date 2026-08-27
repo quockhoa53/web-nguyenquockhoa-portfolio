@@ -1448,32 +1448,45 @@
   color: #ef4444;
 }
 
-/* --- Modals (Spacious 900px Form Grid) --- */
+/* --- Modals (Spacious 1200px Form Grid with Smooth Scrolling) --- */
 .admin-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
-  background: rgba(6, 9, 17, 0.75);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  overflow-y: auto;
+  z-index: 1000;
+  background: rgba(6, 9, 17, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
 }
 
 .admin-modal-card {
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;
   background: var(--adm-surface);
   border: 1px solid var(--adm-border);
   border-radius: 20px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
+  height: 92vh;
+  max-height: 92vh;
   overflow: hidden;
-  max-height: 90vh;
+  position: relative;
   animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-modal-card > form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  flex: 1;
 }
 
 @keyframes modalScaleIn {
@@ -1485,9 +1498,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 28px;
+  padding: 18px 28px;
   border-bottom: 1px solid var(--adm-border);
   background: var(--adm-surface-subtle);
+  flex-shrink: 0;
 }
 
 .modal-tag {
@@ -1526,6 +1540,8 @@
   padding: 28px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
 }
 
 .admin-form-grid-modern {
@@ -1574,7 +1590,7 @@
 
 .admin-textarea-input {
   resize: vertical;
-  min-height: 80px;
+  min-height: 90px;
 }
 
 .admin-checkbox-card {
@@ -1612,6 +1628,7 @@
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--adm-border);
+  width: 100%;
 }
 
 .modal-footer {
@@ -1622,6 +1639,7 @@
   padding: 16px 28px;
   background: var(--adm-surface-subtle);
   border-top: 1px solid var(--adm-border);
+  flex-shrink: 0;
 }
 
 .modal-btn-cancel {
