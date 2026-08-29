@@ -2887,33 +2887,47 @@
 .admin-login label > div {
   display: flex;
   align-items: center;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
   padding: 0 16px;
   gap: 12px;
   color: #94a3b8;
   transition: all 0.25s ease;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .admin-login label > div:focus-within {
   border-color: #8b5cf6;
-  background: rgba(15, 23, 42, 0.9);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25), 0 4px 15px rgba(139, 92, 246, 0.1);
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25), 0 4px 15px rgba(139, 92, 246, 0.15);
   color: #a78bfa;
 }
 
 .admin-login label input {
   flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
   height: 48px;
-  color: #ffffff;
+  color: #ffffff !important;
   font-size: 14.5px;
   font-family: inherit;
   box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.admin-login label input:-webkit-autofill,
+.admin-login label input:-webkit-autofill:hover, 
+.admin-login label input:-webkit-autofill:focus, 
+.admin-login label input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: #ffffff !important;
 }
 
 .admin-login label input::placeholder {
@@ -3163,6 +3177,22 @@
   letter-spacing: 12px;
   color: #c084fc !important;
   height: 60px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.admin-login .otp-code-input:-webkit-autofill,
+.admin-login .otp-code-input:-webkit-autofill:hover, 
+.admin-login .otp-code-input:-webkit-autofill:focus, 
+.admin-login .otp-code-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+  -webkit-text-fill-color: #c084fc !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: #c084fc !important;
 }
 
 .admin-login .otp-code-input::placeholder {
