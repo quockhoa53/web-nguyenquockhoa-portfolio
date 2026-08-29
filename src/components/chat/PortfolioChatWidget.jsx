@@ -20,13 +20,12 @@ import {
   ThumbsDown
 } from 'lucide-react'
 import { getProjects, getKnowledgeArticles, getResumes } from '../../services/portfolioApi'
+import { API_BASE } from '../../services/httpClient'
 import { ProjectChatCard } from './ProjectChatCard'
 import { ArticleChatCard } from './ArticleChatCard'
 import { ContactChatCard } from './ContactChatCard'
 import { ResumeChatCard } from './ResumeChatCard'
 import { ContactConfirmChatCard } from './ContactConfirmChatCard'
-
-const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
 
 const DEFAULT_SUGGESTIONS = [
   { icon: '💼', text: 'Kinh nghiệm làm việc & năng lực của Khoa?' },
@@ -88,7 +87,7 @@ const ChatMessageItem = memo(function ChatMessageItem({
     if (feedbackRating === ratingVal) return
     setFeedbackRating(ratingVal)
     try {
-      await fetch(`${CHATBOT_API}/api/chat/feedback`, {
+      await fetch(`${API_BASE}/chat/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -351,7 +350,7 @@ export function PortfolioChatWidget() {
 
     // 2. Try Backend Neural TTS (Edge-TTS / ElevenLabs)
     try {
-      const response = await fetch(`${CHATBOT_API}/api/tts`, {
+      const response = await fetch(`${API_BASE}/chat/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: cleanText })
@@ -451,7 +450,7 @@ export function PortfolioChatWidget() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${CHATBOT_API}/api/chat/stream`, {
+      const response = await fetch(`${API_BASE}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId, message: query })

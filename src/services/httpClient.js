@@ -1,5 +1,6 @@
 const defaultApiUrl = `${window.location.protocol}//${window.location.hostname}:8080/api/v1`
-const API_URL = (import.meta.env.VITE_API_URL || defaultApiUrl).replace(/\/$/, '')
+export const API_BASE = (import.meta.env.VITE_API_URL || defaultApiUrl).replace(/\/$/, '')
+const API_URL = API_BASE
 
 export async function request(path, options = {}) {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('portfolio_admin_token') : null

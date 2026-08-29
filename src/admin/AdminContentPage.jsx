@@ -29,6 +29,8 @@ import {
   createAdminItem,
   deleteAdminItem,
   getAdminAiFacts,
+  getAdminAiInsights,
+  adoptAdminAiFact,
   getAdminArticles,
   getAdminComments,
   getAdminContacts,
@@ -213,7 +215,6 @@ export function AdminContentPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const toast = useToast()
-  const CHATBOT_API = import.meta.env.VITE_CHATBOT_API_URL || 'https://chatbot-nguyenquockhoa-portfolio.onrender.com'
 
   const DEFAULT_AI_INSIGHTS = useMemo(() => ({
     total_conversations: 0,
@@ -231,17 +232,16 @@ export function AdminContentPage() {
   const fetchLiveInsights = useCallback(async () => {
     setLoadingInsights(true)
     try {
-      const res = await fetch(`${CHATBOT_API}/api/admin/ai-insights`)
-      const data = await res.json()
-      if (data.data) {
-        setAiInsights(data.data)
+      const data = await getAdminAiInsights()
+      if (data) {
+        setAiInsights(data.data || data)
       }
     } catch {
       // ignore
     } finally {
       setLoadingInsights(false)
     }
-  }, [CHATBOT_API])
+  }, [])
 
   // Fetch AI Learning Insights when on ai-facts section
   useEffect(() => {
