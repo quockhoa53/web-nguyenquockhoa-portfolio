@@ -20,6 +20,7 @@ import { useToast } from '../components/common/ToastContext'
 export function AdminLoginPage() {
   const [form, setForm] = useState({ username: '', password: '' })
   const [step, setStep] = useState(1) // 1: Credentials, 2: 2FA TOTP
+  const [showPassword, setShowPassword] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
   const [totpData, setTotpData] = useState({
     preAuthToken: '',
@@ -146,12 +147,20 @@ export function AdminLoginPage() {
               <LockKeyhole size={18} />
               <input
                 required
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 placeholder="Nhập mật khẩu..."
                 value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
               />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </label>
 
@@ -162,7 +171,7 @@ export function AdminLoginPage() {
           </button>
         </form>
       ) : (
-        <form onSubmit={submit2Fa} className="reveal 2fa-form-step">
+        <form onSubmit={submit2Fa} className="reveal totp-form-step">
           <div className="login-shield totp-shield">
             <Smartphone size={30} />
           </div>
