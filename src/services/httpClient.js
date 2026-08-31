@@ -4,10 +4,14 @@ const API_URL = API_BASE
 
 export async function request(path, options = {}) {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('portfolio_admin_token') : null
+  const guestToken = typeof localStorage !== 'undefined' ? localStorage.getItem('portfolio_guest_token') : null
   const headers = { ...options.headers }
   if (token) {
     headers['X-Admin-Token'] = token
     headers['Authorization'] = `Bearer ${token}`
+  }
+  if (guestToken) {
+    headers['X-Guest-Token'] = guestToken
   }
 
   const response = await fetch(`${API_URL}${path}`, {
