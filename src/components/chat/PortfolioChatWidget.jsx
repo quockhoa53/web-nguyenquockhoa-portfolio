@@ -735,21 +735,6 @@ export function PortfolioChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="chat-quick-bar">
-            {DEFAULT_SUGGESTIONS.map((sug, i) => (
-              <button
-                key={i}
-                className="quick-pill-btn"
-                onClick={() => handleSend(sug.text)}
-                disabled={isLoading}
-                title={sug.text}
-              >
-                <span>{sug.icon}</span>
-                <span className="quick-pill-text">{sug.text}</span>
-              </button>
-            ))}
-          </div>
-
           <div className="chat-input-container">
             <button
               type="button"
