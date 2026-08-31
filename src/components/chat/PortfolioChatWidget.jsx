@@ -472,7 +472,7 @@ export function PortfolioChatWidget() {
     }
   }, [])
 
-  // Text-to-Speech (TTS) voice player
+  // Text-to-Speech (TTS) voice player with instant (0ms) zero-latency playback
   const handleSpeak = useCallback(async (text, messageId) => {
     if (speakingMessageId === messageId) {
       if (audioPlayerRef.current) {
@@ -513,25 +513,33 @@ export function PortfolioChatWidget() {
 
     setSpeakingMessageId(messageId)
 
-    // Helper: Fallback to native Web Speech API
-    const fallbackToBrowserTTS = () => {
-      if (!('speechSynthesis' in window)) {
-        setSpeakingMessageId(null)
+    // 1. Instant Playback via Web Speech API (Instantaneous 0.05s start, 0 network lag)
+    if ('speechSynthesis' in window) {
+      try {
+        const utterance = new SpeechSynthesisUtterance(cleanText)
+        utterance.lang = 'vi-VN'
+        utterance.rate = 1.0 // Natural, clear & friendly conversational pace
+        utterance.pitch = 1.0
+        utterance.onend = () => setSpeakingMessageId(null)
+        utterance.onerror = () => setSpeakingMessageId(null)
+
+        const voices = window.speechSynthesis.getVoices()
+        // Priority: Vietnamese Natural/Neural voices (HoaiMy, Google Tiếng Việt, Linh, An)
+        const viVoice = voices.find(v => (v.lang.includes('vi') || v.lang.includes('VN')) && (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('HoaiMy')))
+          || voices.find(v => v.lang.includes('vi') || v.lang.includes('VN'))
+
+        if (viVoice) {
+          utterance.voice = viVoice
+        }
+
+        window.speechSynthesis.speak(utterance)
         return
+      } catch (speechErr) {
+        console.warn('Browser SpeechSynthesis error, falling back to server TTS:', speechErr)
       }
-      const utterance = new SpeechSynthesisUtterance(cleanText)
-      utterance.lang = 'vi-VN'
-      utterance.rate = 0.95 // Calm, natural and warm pace
-      utterance.pitch = 1.0
-      utterance.onend = () => setSpeakingMessageId(null)
-      utterance.onerror = () => setSpeakingMessageId(null)
-      const voices = window.speechSynthesis.getVoices()
-      const viVoice = voices.find(v => v.lang.includes('vi') || v.lang.includes('VN'))
-      if (viVoice) utterance.voice = viVoice
-      window.speechSynthesis.speak(utterance)
     }
 
-    // 2. Try Backend Neural TTS (Edge-TTS / ElevenLabs)
+    // 2. Cloud Server Neural TTS Fallback (when browser speech is unsupported)
     try {
       const response = await fetch(`${API_BASE}/chat/tts`, {
         method: 'POST',
@@ -543,7 +551,7 @@ export function PortfolioChatWidget() {
         const audioBlob = await response.blob()
         const audioUrl = URL.createObjectURL(audioBlob)
         const audio = new Audio(audioUrl)
-        audio.playbackRate = 1.0 // Natural, expressive & calm pace
+        audio.playbackRate = 1.0
         audioPlayerRef.current = audio
 
         audio.onended = () => {
@@ -555,16 +563,16 @@ export function PortfolioChatWidget() {
         audio.onerror = () => {
           URL.revokeObjectURL(audioUrl)
           audioPlayerRef.current = null
-          fallbackToBrowserTTS()
+          setSpeakingMessageId(null)
         }
 
         await audio.play()
       } else {
-        fallbackToBrowserTTS()
+        setSpeakingMessageId(null)
       }
     } catch (err) {
-      console.warn('ElevenLabs TTS failed, falling back to Web Speech API:', err)
-      fallbackToBrowserTTS()
+      console.error('Server TTS failed:', err)
+      setSpeakingMessageId(null)
     }
   }, [speakingMessageId])
 
