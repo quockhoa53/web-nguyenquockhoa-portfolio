@@ -677,24 +677,273 @@ export function PortfolioChatWidget() {
     }
   }
 
-  function handleExportChat() {
-    if (messages.length <= 1) {
-      toast.info('Chưa có nội dung trò chuyện để tải về.')
-      return
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function formatMarkdownToHtml(markdownText) {
+  if (!markdownText) return ''
+  let html = escapeHtml(markdownText)
+
+  // Code blocks ```code```
+  html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+
+  // Inline code `code`
+  html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+
+  // Bold **text**
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+
+  // Italic *text*
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>')
+
+  // Headers ###
+  html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>')
+  html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>')
+  html = html.replace(/^# (.*$)/gim, '<h2>$1</h2>')
+
+  // Links [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+
+  // Bullet points
+  html = html.replace(/^\s*[-*•]\s+(.*)$/gim, '<li>$1</li>')
+  html = html.replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>')
+  html = html.replace(/<\/ul>\s*<ul>/gim, '')
+
+  // Line breaks
+  html = html.replace(/\n\n/g, '</p><p>')
+  html = html.replace(/\n/g, '<br/>')
+
+  return `<p>${html}</p>`
+}
+
+function generateChatHtmlExport(messages, sessionId, guestName) {
+  const exportTime = new Date().toLocaleString('vi-VN')
+  const guestDisplay = guestName ? escapeHtml(guestName) : 'Khách vãng lai'
+
+  const messageItemsHtml = messages.map(m => {
+    const isUser = m.role === 'user'
+    const roleLabel = isUser ? '👤 ' + guestDisplay : '🤖 NQK AI Assistant'
+    const contentHtml = formatMarkdownToHtml(m.content)
+
+    return `
+      <div class="msg-wrapper ${isUser ? 'user-side' : 'ai-side'}">
+        <div class="msg-sender">${roleLabel}</div>
+        <div class="msg-bubble">
+          ${contentHtml}
+        </div>
+      </div>
+    `
+  }).join('\n')
+
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch Sử Cuộc Trò Chuyện - NQK AI Assistant (${sessionId})</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #131b2e;
+      --bubble-ai: #1e293b;
+      --bubble-user: linear-gradient(135deg, #0284c7, #4f46e5);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
     }
-    const transcript = messages
-      .map(m => `### ${m.role === 'user' ? '👤 Người dùng' : '🤖 NQK AI Assistant'}\n\n${m.content}\n\n---`)
-      .join('\n\n')
-    const header = `# Lịch Sử Hội Thoại Với NQK AI Assistant\n**Thời gian xuất**: ${new Date().toLocaleString('vi-VN')}\n**Phiên chat**: ${sessionId}\n\n---\n\n`
-    const blob = new Blob([header + transcript], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `hoi-thoai-nqk-ai-${sessionId}.md`
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success('Đã xuất lịch sử cuộc trò chuyện (.md)!')
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+    .header {
+      padding: 24px;
+      background: linear-gradient(135deg, #0f172a, #1e1b4b);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-info { display: flex; align-items: center; gap: 14px; }
+    .bot-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #0284c7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    .title { font-size: 20px; font-weight: 700; color: #ffffff; }
+    .meta { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .actions { display: flex; gap: 8px; }
+    .btn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      transition: all 0.2s;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.15); }
+    .btn-primary { background: #0284c7; border-color: #0284c7; color: #fff; }
+    .btn-primary:hover { background: #0369a1; }
+    .chat-body {
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .msg-wrapper { display: flex; flex-direction: column; max-width: 88%; }
+    .msg-wrapper.user-side { align-self: flex-end; align-items: flex-end; }
+    .msg-wrapper.ai-side { align-self: flex-start; align-items: flex-start; }
+    .msg-sender { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .msg-bubble {
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-size: 14.5px;
+      line-height: 1.65;
+      word-break: break-word;
+    }
+    .user-side .msg-bubble {
+      background: var(--bubble-user);
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+    }
+    .ai-side .msg-bubble {
+      background: var(--bubble-ai);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 2px;
+    }
+    .msg-bubble p { margin-bottom: 8px; }
+    .msg-bubble p:last-child { margin-bottom: 0; }
+    .msg-bubble ul { margin: 8px 0 8px 20px; }
+    .msg-bubble li { margin-bottom: 4px; }
+    .msg-bubble a { color: #38bdf8; text-decoration: underline; }
+    .msg-bubble pre {
+      background: #090d16;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 10px 0;
+      border: 1px solid var(--border);
+      font-family: Consolas, Monaco, monospace;
+      font-size: 13px;
+    }
+    .inline-code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 13px;
+      color: #38bdf8;
+    }
+    .footer {
+      padding: 20px 24px;
+      background: #0b1120;
+      border-top: 1px solid var(--border);
+      font-size: 12.5px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .footer-links a { color: var(--accent); text-decoration: none; margin-left: 12px; }
+    .footer-links a:hover { text-decoration: underline; }
+    @media print {
+      body { background: #ffffff; color: #000000; padding: 0; }
+      .container { border: none; box-shadow: none; max-width: 100%; }
+      .actions { display: none; }
+      .header, .footer { background: #f1f5f9; color: #000; }
+      .user-side .msg-bubble { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+      .ai-side .msg-bubble { background: #f8fafc; color: #0f172a; border: 1px solid #e2e8f0; }
+      .title, .meta, .msg-sender { color: #0f172a !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-info">
+        <div class="bot-avatar">🤖</div>
+        <div>
+          <div class="title">NQK AI Assistant</div>
+          <div class="meta">Phiên chat: <strong>${sessionId}</strong> • Xuất lúc: ${exportTime} • Khách: <strong>${guestDisplay}</strong></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ In / Lưu PDF</button>
+        <a class="btn" href="https://nguyenquockhoaportfolio.vercel.app" target="_blank">🌐 Mở Website</a>
+      </div>
+    </div>
+
+    <div class="chat-body">
+      ${messageItemsHtml}
+    </div>
+
+    <div class="footer">
+      <div>Được tạo tự động bởi <strong>NQK AI Assistant</strong> - Trợ lý AI đại diện cho kỹ sư <strong>Nguyễn Quốc Khoa</strong></div>
+      <div class="footer-links">
+        <span>📧 nguyenquockhoa5549@gmail.com</span>
+        <span>📱 0969 895 549</span>
+        <a href="https://nguyenquockhoaportfolio.vercel.app" target="_blank">Portfolio</a>
+        <a href="https://github.com/quockhoa53" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+function handleExportChat() {
+  if (messages.length <= 1) {
+    toast.info('Chưa có nội dung trò chuyện để tải về.')
+    return
   }
+  const htmlContent = generateChatHtmlExport(messages, sessionId, guestName)
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `hoi-thoai-nqk-ai-${sessionId}.html`
+  a.click()
+  URL.revokeObjectURL(url)
+  toast.success('Đã xuất lịch sử cuộc trò chuyện trực quan (.html)!')
+}
 
   function handleCopySummary() {
     const userQueries = messages.filter(m => m.role === 'user').map(m => `• ${m.content}`).join('\n')
@@ -868,9 +1117,9 @@ export function PortfolioChatWidget() {
                   <ClipboardCopy size={14} />
                   <span>Sao chép tóm tắt</span>
                 </button>
-                <button className="history-action-pill" onClick={handleExportChat} title="Tải xuống tệp Markdown (.md)">
+                <button className="history-action-pill" onClick={handleExportChat} title="Tải xuống tệp HTML trực quan (.html)">
                   <FileDown size={14} />
-                  <span>Tải file (.md)</span>
+                  <span>Tải file (.html)</span>
                 </button>
                 <button className="history-action-pill highlight" onClick={handleReset} title="Bắt đầu phiên chat mới">
                   <Plus size={14} />
