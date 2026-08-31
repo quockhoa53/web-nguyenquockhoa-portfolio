@@ -316,18 +316,59 @@ const ChatMessageItem = memo(function ChatMessageItem({
   )
 })
 
+const STORAGE_KEY_MESSAGES = 'nqk_portfolio_chat_messages_v1'
+const STORAGE_KEY_SESSION = 'nqk_portfolio_chat_session_v1'
+
+function getInitialGuestName() {
+  try {
+    const saved = localStorage.getItem('portfolio_guest_info')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      return parsed.displayName || ''
+    }
+  } catch {}
+  return ''
+}
+
+function getInitialSessionId() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_SESSION)
+    if (saved) return saved
+  } catch {}
+  const newId = 'sess_' + Math.random().toString(36).substring(2, 9)
+  try {
+    localStorage.setItem(STORAGE_KEY_SESSION, newId)
+  } catch {}
+  return newId
+}
+
+function getInitialWelcomeMessage(name) {
+  return {
+    id: 'welcome-msg',
+    role: 'assistant',
+    content: name
+      ? `Xin chào bạn **${name}**! 👋 Tôi là **NQK AI Assistant** - Trợ lý AI đại diện cho kỹ sư **Nguyễn Quốc Khoa**.\n\nRất vui được gặp lại bạn! Bạn muốn tìm hiểu thêm về các dự án thực tế, kinh nghiệm thiết kế Backend, tối ưu Database hay giải pháp AI nào của anh Khoa?`
+      : 'Xin chào! 👋 Tôi là **NQK AI Assistant** - Trợ lý AI đại diện cho kỹ sư **Nguyễn Quốc Khoa**.\n\nBạn có thể hỏi tôi về các dự án thực tế, kinh nghiệm thiết kế Backend, tối ưu Database hoặc các giải pháp AI mà Khoa đã triển khai.'
+  }
+}
+
+function getInitialMessages(name) {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_MESSAGES)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {}
+  return [getInitialWelcomeMessage(name)]
+}
+
 export function PortfolioChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [sessionId, setSessionId] = useState(() => 'sess_' + Math.random().toString(36).substring(2, 9))
-  const [messages, setMessages] = useState([
-    {
-      id: 'welcome-msg',
-      role: 'assistant',
-      content:
-        'Xin chào! 👋 Tôi là **NQK AI Assistant** - Trợ lý AI đại diện cho kỹ sư **Nguyễn Quốc Khoa**.\n\nBạn có thể hỏi tôi về các dự án thực tế, kinh nghiệm thiết kế Backend, tối ưu Database hoặc các giải pháp AI mà Khoa đã triển khai.'
-    }
-  ])
+  const [guestName, setGuestName] = useState(getInitialGuestName)
+  const [sessionId, setSessionId] = useState(getInitialSessionId)
+  const [messages, setMessages] = useState(() => getInitialMessages(getInitialGuestName()))
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(true)
@@ -336,6 +377,25 @@ export function PortfolioChatWidget() {
   const [resumesList, setResumesList] = useState([])
   
   const toast = useToast()
+
+  // Sync messages to localStorage whenever they change
+  useEffect(() => {
+    try {
+      if (messages.length > 0) {
+        localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages))
+      }
+    } catch {}
+  }, [messages])
+
+  // Sync guest identity from localStorage
+  useEffect(() => {
+    const checkGuest = () => {
+      const name = getInitialGuestName()
+      setGuestName(name)
+    }
+    window.addEventListener('storage', checkGuest)
+    return () => window.removeEventListener('storage', checkGuest)
+  }, [])
 
   // Voice Interaction States
   const [isListening, setIsListening] = useState(false)
@@ -529,15 +589,18 @@ export function PortfolioChatWidget() {
   }, [isOpen])
 
   function handleReset() {
-    setSessionId('sess_' + Math.random().toString(36).substring(2, 9))
-    setMessages([
-      {
-        id: 'welcome-' + Date.now(),
-        role: 'assistant',
-        content:
-          'Xin chào! 👋 Tôi là **NQK AI Assistant** - Trợ lý AI đại diện cho kỹ sư **Nguyễn Quốc Khoa**.\n\nBạn có thể hỏi tôi về các dự án thực tế, kinh nghiệm thiết kế Backend, tối ưu Database hoặc các giải pháp AI mà Khoa đã triển khai.'
-      }
-    ])
+    const newSession = 'sess_' + Math.random().toString(36).substring(2, 9)
+    setSessionId(newSession)
+    try {
+      localStorage.setItem(STORAGE_KEY_SESSION, newSession)
+    } catch {}
+    const currentName = getInitialGuestName()
+    const welcome = [getInitialWelcomeMessage(currentName)]
+    setMessages(welcome)
+    try {
+      localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(welcome))
+    } catch {}
+    toast.info('Đã làm mới cuộc trò chuyện.')
   }
 
   function handleExportChat() {
@@ -548,7 +611,7 @@ export function PortfolioChatWidget() {
     const transcript = messages
       .map(m => `### ${m.role === 'user' ? '👤 Người dùng' : '🤖 NQK AI Assistant'}\n\n${m.content}\n\n---`)
       .join('\n\n')
-    const header = `# Lịch Sử Hội Thoại Với NQK AI Assistant\n**Thời gian xuất**: ${new Date().toLocaleString('vi-VN')}\n**Phiên chat**: ${sessionId}\n\n---\n\n`
+    const header = `# Lịch Sử Hội Thoại Với NQK AI Assistant\n**Thời gian xuất**: ${new Date().toLocaleString('vi-VN')}\n**Phiên chat**: ${sessionId}\n**Khách trò chuyện**: ${guestName || 'Khách vãng lai'}\n\n---\n\n`
     const blob = new Blob([header + transcript], { type: 'text/markdown;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -561,7 +624,7 @@ export function PortfolioChatWidget() {
 
   function handleCopySummary() {
     const userQueries = messages.filter(m => m.role === 'user').map(m => `• ${m.content}`).join('\n')
-    const summary = `📋 [TÓM TẮT CUỘC TRÒ CHUYỆN VỚI NQK AI]\n• Phiên chat: ${sessionId}\n• Thời gian: ${new Date().toLocaleString('vi-VN')}\n\nCác chủ đề đã trao đổi:\n${userQueries || '• Trao đổi thông tin năng lực và dự án của Nguyễn Quốc Khoa'}\n\nLiên hệ kỹ sư Nguyễn Quốc Khoa:\n• Email: nguyenquockhoa5549@gmail.com\n• SĐT / Zalo: 0969 895 549\n• Website: https://nguyenquockhoaportfolio.vercel.app`
+    const summary = `📋 [TÓM TẮT CUỘC TRÒ CHUYỆN VỚI NQK AI]\n• Phiên chat: ${sessionId}\n• Người trò chuyện: ${guestName || 'Khách vãng lai'}\n• Thời gian: ${new Date().toLocaleString('vi-VN')}\n\nCác chủ đề đã trao đổi:\n${userQueries || '• Trao đổi thông tin năng lực và dự án của Nguyễn Quốc Khoa'}\n\nLiên hệ kỹ sư Nguyễn Quốc Khoa:\n• Email: nguyenquockhoa5549@gmail.com\n• SĐT / Zalo: 0969 895 549\n• Website: https://nguyenquockhoaportfolio.vercel.app`
     navigator.clipboard.writeText(summary)
     toast.success('Đã sao chép tóm tắt cuộc trò chuyện vào clipboard!')
   }
@@ -571,6 +634,9 @@ export function PortfolioChatWidget() {
     if (!query || isLoading) return
 
     setInput('')
+    const currentGuest = getInitialGuestName()
+    setGuestName(currentGuest)
+
     const botMsgId = 'bot-' + Date.now()
     const newMessages = [...messages, { id: 'user-' + Date.now(), role: 'user', content: query }, { id: botMsgId, role: 'assistant', content: '' }]
     setMessages(newMessages)
@@ -580,7 +646,11 @@ export function PortfolioChatWidget() {
       const response = await fetch(`${API_BASE}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, message: query })
+        body: JSON.stringify({
+          session_id: sessionId,
+          message: query,
+          guest_name: currentGuest
+        })
       })
 
       if (response.ok && response.body) {
@@ -617,7 +687,6 @@ export function PortfolioChatWidget() {
       }
     } catch (err) {
       const fallbackReply = generateClientFallbackReply(query)
-      setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackReply } : m))
     } finally {
       setIsLoading(false)
     }
@@ -668,7 +737,10 @@ export function PortfolioChatWidget() {
                 <span className="avatar-online-badge" />
               </div>
               <div>
-                <h3 className="bot-name font-display">NQK AI Assistant</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <h3 className="bot-name font-display">NQK AI Assistant</h3>
+                  {guestName && <span className="chat-guest-badge" title={`Đang nhận diện: ${guestName}`}>👋 {guestName}</span>}
+                </div>
                 <span className="bot-status font-mono"><span className="status-indicator" /> Voice & Chat</span>
               </div>
             </div>
