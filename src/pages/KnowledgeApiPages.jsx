@@ -137,39 +137,45 @@ export function KnowledgeDetailPage() {
   }
 
   const { article, content } = state.data
+  const plainText = ((content || article.content) || '').replace(/<[^>]*>?/gm, '')
+  const wordsCount = plainText.split(/\s+/).filter(Boolean).length
+  const readingTimeMinutes = Math.max(1, Math.ceil(wordsCount / 220))
 
   return (
-    <main>
+    <main className="knowledge-detail-page">
       {/* Knowledge Detail Banner */}
       <section className="detail-hero-banner tone-cyan">
         <div className="hero-banner-mesh" />
         <div className="hero-banner-glow" />
 
-        <div className="content-shell hero-banner-content" style={{ maxWidth: '880px' }}>
+        <div className="content-shell hero-banner-content" style={{ maxWidth: '1020px' }}>
           <div className="hero-top-nav">
             <Link to="/knowledge" className="hero-back-btn">
-              <ArrowLeft /> Quay lại Kho kiến thức
+              <ArrowLeft size={14} /> Quay lại Kho kiến thức
             </Link>
             <span className="hero-category-badge">
-              <BookOpen style={{ width: 14, height: 14 }} />
+              <BookOpen size={14} />
               {article.categoryName || 'Kiến thức chuyên sâu'}
             </span>
           </div>
 
-          <h1 className="hero-main-title" style={{ fontSize: 'clamp(28px, 3.8vw, 44px)' }}>
+          <h1 className="hero-main-title">
             {article.title}
           </h1>
 
           <div className="hero-meta-strip">
             <span className="hero-pill">
-              <Calendar style={{ width: 14, height: 14 }} />
-              Xuất bản: {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('vi-VN') : 'Hôm nay'}
+              <Calendar size={14} />
+              {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('vi-VN') : 'Mới cập nhật'}
             </span>
             <span className="hero-pill">
-              <Eye style={{ width: 14, height: 14 }} /> {article.viewCount || 0} lượt xem
+              <Clock size={14} /> ~{readingTimeMinutes} phút đọc
             </span>
             <span className="hero-pill">
-              <Heart style={{ width: 14, height: 14 }} /> {article.likeCount || 0} lượt thích
+              <Eye size={14} /> {article.viewCount || 0} lượt xem
+            </span>
+            <span className="hero-pill">
+              <Heart size={14} /> {article.likeCount || 0} lượt thích
             </span>
           </div>
 
@@ -183,7 +189,7 @@ export function KnowledgeDetailPage() {
 
       {/* Article Content */}
       <section className="section detail-content-section">
-        <div className="content-shell" style={{ maxWidth: '880px' }}>
+        <div className="content-shell" style={{ maxWidth: '1020px' }}>
           <article
             className="prose-card-wide rich-content"
             dangerouslySetInnerHTML={{ __html: content || article.content }}
