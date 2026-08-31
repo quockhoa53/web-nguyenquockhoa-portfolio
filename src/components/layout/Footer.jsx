@@ -57,7 +57,7 @@ export function Footer() {
                 className="social-linkedin"
                 title="LinkedIn: Nguyễn Quốc Khoa"
               >
-                <LinkedInIcon size={19} />
+                <LinkedInIcon size={20} />
               </a>
             )}
             {githubLink && (
@@ -93,7 +93,7 @@ export function Footer() {
                 className="social-zalo"
                 title="Zalo: 0969 895 549"
               >
-                <ZaloIcon size={22} />
+                <ZaloIcon size={20} />
               </a>
             )}
           </div>
