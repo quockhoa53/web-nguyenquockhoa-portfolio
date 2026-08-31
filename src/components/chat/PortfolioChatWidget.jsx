@@ -19,7 +19,12 @@ import {
   ThumbsUp,
   ThumbsDown,
   ClipboardCopy,
-  FileDown
+  FileDown,
+  History,
+  Plus,
+  Trash2,
+  MessageSquare,
+  ArrowLeft
 } from 'lucide-react'
 import { getProjects, getKnowledgeArticles, getResumes } from '../../services/portfolioApi'
 import { API_BASE } from '../../services/httpClient'
@@ -316,6 +321,7 @@ const ChatMessageItem = memo(function ChatMessageItem({
   )
 })
 
+const STORAGE_KEY_SESSIONS = 'nqk_portfolio_chat_sessions_v2'
 const STORAGE_KEY_MESSAGES = 'nqk_portfolio_chat_messages_v1'
 const STORAGE_KEY_SESSION = 'nqk_portfolio_chat_session_v1'
 
@@ -328,6 +334,30 @@ function getInitialGuestName() {
     }
   } catch {}
   return ''
+}
+
+function getAllSavedSessions() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SESSIONS)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch {}
+  return []
+}
+
+function saveSessionToStore(sessionObj) {
+  try {
+    const sessions = getAllSavedSessions()
+    const idx = sessions.findIndex(s => s.id === sessionObj.id)
+    if (idx !== -1) {
+      sessions[idx] = { ...sessions[idx], ...sessionObj, updatedAt: Date.now() }
+    } else {
+      sessions.unshift({ ...sessionObj, createdAt: Date.now(), updatedAt: Date.now() })
+    }
+    localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(sessions.slice(0, 30)))
+  } catch {}
 }
 
 function getInitialSessionId() {
@@ -366,9 +396,11 @@ function getInitialMessages(name) {
 export function PortfolioChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [guestName, setGuestName] = useState(getInitialGuestName)
   const [sessionId, setSessionId] = useState(getInitialSessionId)
   const [messages, setMessages] = useState(() => getInitialMessages(getInitialGuestName()))
+  const [savedSessionsList, setSavedSessionsList] = useState(getAllSavedSessions)
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showTooltip, setShowTooltip] = useState(true)
@@ -378,14 +410,20 @@ export function PortfolioChatWidget() {
   
   const toast = useToast()
 
-  // Sync messages to localStorage whenever they change
+  // Sync messages to localStorage and persistent sessions list
   useEffect(() => {
     try {
       if (messages.length > 0) {
         localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages))
       }
+      if (messages.length > 1) {
+        const firstUserMsg = messages.find(m => m.role === 'user')?.content || 'Cuộc trò chuyện'
+        const title = firstUserMsg.length > 45 ? firstUserMsg.slice(0, 45) + '...' : firstUserMsg
+        saveSessionToStore({ id: sessionId, title, messages })
+        setSavedSessionsList(getAllSavedSessions())
+      }
     } catch {}
-  }, [messages])
+  }, [messages, sessionId])
 
   // Sync guest identity from localStorage
   useEffect(() => {
@@ -565,15 +603,16 @@ export function PortfolioChatWidget() {
 
   // Auto scroll to latest message
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !showHistory) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, isOpen, isLoading])
+  }, [messages, isOpen, isLoading, showHistory])
 
   // Listen for open-ai-chat event dispatched by Command Palette
   useEffect(() => {
     const handleOpenAIChat = (e) => {
       setIsOpen(true)
+      setShowHistory(false)
       if (e.detail?.query) setTimeout(() => handleSend(e.detail.query), 100)
     }
     window.addEventListener('open-ai-chat', handleOpenAIChat)
@@ -582,11 +621,11 @@ export function PortfolioChatWidget() {
 
   // Focus input when opened
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !showHistory) {
       setShowTooltip(false)
       setTimeout(() => inputRef.current?.focus(), 150)
     }
-  }, [isOpen])
+  }, [isOpen, showHistory])
 
   function handleReset() {
     const newSession = 'sess_' + Math.random().toString(36).substring(2, 9)
@@ -600,7 +639,42 @@ export function PortfolioChatWidget() {
     try {
       localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(welcome))
     } catch {}
-    toast.info('Đã làm mới cuộc trò chuyện.')
+    setShowHistory(false)
+    toast.info('Đã bắt đầu cuộc trò chuyện mới.')
+  }
+
+  function handleSelectSession(sessionItem) {
+    if (!sessionItem) return
+    setSessionId(sessionItem.id)
+    setMessages(sessionItem.messages || [])
+    try {
+      localStorage.setItem(STORAGE_KEY_SESSION, sessionItem.id)
+      localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(sessionItem.messages || []))
+    } catch {}
+    setShowHistory(false)
+    toast.success('Đã tải cuộc trò chuyện.')
+  }
+
+  function handleDeleteSession(e, targetId) {
+    e.stopPropagation()
+    const current = getAllSavedSessions()
+    const filtered = current.filter(s => s.id !== targetId)
+    localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(filtered))
+    setSavedSessionsList(filtered)
+    if (targetId === sessionId) {
+      handleReset()
+    } else {
+      toast.info('Đã xóa cuộc trò chuyện khỏi lịch sử.')
+    }
+  }
+
+  function handleClearAllHistory() {
+    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử các cuộc trò chuyện?')) {
+      localStorage.removeItem(STORAGE_KEY_SESSIONS)
+      setSavedSessionsList([])
+      handleReset()
+      toast.success('Đã xóa sạch toàn bộ lịch sử.')
+    }
   }
 
   function handleExportChat() {
@@ -611,7 +685,7 @@ export function PortfolioChatWidget() {
     const transcript = messages
       .map(m => `### ${m.role === 'user' ? '👤 Người dùng' : '🤖 NQK AI Assistant'}\n\n${m.content}\n\n---`)
       .join('\n\n')
-    const header = `# Lịch Sử Hội Thoại Với NQK AI Assistant\n**Thời gian xuất**: ${new Date().toLocaleString('vi-VN')}\n**Phiên chat**: ${sessionId}\n**Khách trò chuyện**: ${guestName || 'Khách vãng lai'}\n\n---\n\n`
+    const header = `# Lịch Sử Hội Thoại Với NQK AI Assistant\n**Thời gian xuất**: ${new Date().toLocaleString('vi-VN')}\n**Phiên chat**: ${sessionId}\n\n---\n\n`
     const blob = new Blob([header + transcript], { type: 'text/markdown;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -624,7 +698,7 @@ export function PortfolioChatWidget() {
 
   function handleCopySummary() {
     const userQueries = messages.filter(m => m.role === 'user').map(m => `• ${m.content}`).join('\n')
-    const summary = `📋 [TÓM TẮT CUỘC TRÒ CHUYỆN VỚI NQK AI]\n• Phiên chat: ${sessionId}\n• Người trò chuyện: ${guestName || 'Khách vãng lai'}\n• Thời gian: ${new Date().toLocaleString('vi-VN')}\n\nCác chủ đề đã trao đổi:\n${userQueries || '• Trao đổi thông tin năng lực và dự án của Nguyễn Quốc Khoa'}\n\nLiên hệ kỹ sư Nguyễn Quốc Khoa:\n• Email: nguyenquockhoa5549@gmail.com\n• SĐT / Zalo: 0969 895 549\n• Website: https://nguyenquockhoaportfolio.vercel.app`
+    const summary = `📋 [TÓM TẮT CUỘC TRÒ CHUYỆN VỚI NQK AI]\n• Phiên chat: ${sessionId}\n• Thời gian: ${new Date().toLocaleString('vi-VN')}\n\nCác chủ đề đã trao đổi:\n${userQueries || '• Trao đổi thông tin năng lực và dự án của Nguyễn Quốc Khoa'}\n\nLiên hệ kỹ sư Nguyễn Quốc Khoa:\n• Email: nguyenquockhoa5549@gmail.com\n• SĐT / Zalo: 0969 895 549\n• Website: https://nguyenquockhoaportfolio.vercel.app`
     navigator.clipboard.writeText(summary)
     toast.success('Đã sao chép tóm tắt cuộc trò chuyện vào clipboard!')
   }
@@ -687,6 +761,7 @@ export function PortfolioChatWidget() {
       }
     } catch (err) {
       const fallbackReply = generateClientFallbackReply(query)
+      setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackReply } : m))
     } finally {
       setIsLoading(false)
     }
@@ -737,100 +812,187 @@ export function PortfolioChatWidget() {
                 <span className="avatar-online-badge" />
               </div>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <h3 className="bot-name font-display">NQK AI Assistant</h3>
-                  {guestName && <span className="chat-guest-badge" title={`Đang nhận diện: ${guestName}`}>👋 {guestName}</span>}
-                </div>
+                <h3 className="bot-name font-display">NQK AI Assistant</h3>
                 <span className="bot-status font-mono"><span className="status-indicator" /> Voice & Chat</span>
               </div>
             </div>
             <div className="chat-header-actions">
-              <button className="header-icon-btn" onClick={handleCopySummary} title="Sao chép tóm tắt cuộc trò chuyện">
-                <ClipboardCopy size={16} />
+              <button
+                className={`header-icon-btn ${showHistory ? 'active' : ''}`}
+                onClick={() => setShowHistory(!showHistory)}
+                title="Lịch sử cuộc trò chuyện"
+              >
+                <History size={16} />
               </button>
-              <button className="header-icon-btn" onClick={handleExportChat} title="Tải lịch sử cuộc trò chuyện (.md)">
-                <FileDown size={16} />
+              <button
+                className="header-icon-btn"
+                onClick={handleReset}
+                title="Cuộc trò chuyện mới"
+              >
+                <Plus size={18} />
               </button>
-              <button className="header-icon-btn" onClick={() => setIsExpanded(!isExpanded)} title={isExpanded ? 'Thu nhỏ' : 'Mở rộng'}>
+              <button
+                className="header-icon-btn"
+                onClick={() => setIsExpanded(!isExpanded)}
+                title={isExpanded ? 'Thu nhỏ' : 'Mở rộng'}
+              >
                 {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
-              <button className="header-icon-btn" onClick={handleReset} title="Làm mới cuộc trò chuyện">
-                <RotateCcw size={16} />
-              </button>
-              <button className="header-icon-btn" onClick={() => setIsOpen(false)} title="Đóng chat">
+              <button
+                className="header-icon-btn"
+                onClick={() => setIsOpen(false)}
+                title="Đóng chat"
+              >
                 <X size={18} />
               </button>
             </div>
           </div>
 
-          <div className="chat-messages-container">
-            {messages.map((m, idx) => (
-              <ChatMessageItem
-                key={m.id || idx}
-                message={m}
-                messageIndex={idx}
-                sessionId={sessionId}
-                projectsList={projectsList}
-                articlesList={articlesList}
-                resumesList={resumesList}
-                onCloseMobile={handleCloseMobile}
-                isSpeaking={speakingMessageId === (m.id || m.content.slice(0, 30))}
-                onSpeak={handleSpeak}
-                isLatestAssistant={idx === lastAssistantIndex}
-                isLoading={isLoading}
-                onSendChip={handleSend}
-              />
-            ))}
-
-            {messages.length <= 1 && (
-              <div className="chat-suggestions-container">
-                <div className="suggestions-header">
-                  <Sparkles size={13} className="suggestions-sparkle" />
-                  <span>Mẫu câu hỏi gợi ý nhanh:</span>
-                </div>
-                <div className="suggestions-grid">
-                  {DEFAULT_SUGGESTIONS.map((sug, i) => (
-                    <button
-                      key={i}
-                      className="suggestion-chip-btn"
-                      onClick={() => handleSend(sug.text)}
-                      disabled={isLoading}
-                    >
-                      <span className="sug-icon">{sug.icon}</span>
-                      <span className="sug-text">{sug.text}</span>
-                    </button>
-                  ))}
-                </div>
+          {showHistory ? (
+            <div className="chat-history-drawer reveal">
+              <div className="history-drawer-header">
+                <button className="history-back-btn" onClick={() => setShowHistory(false)}>
+                  <ArrowLeft size={15} />
+                  <span>Quay lại cuộc trò chuyện</span>
+                </button>
+                {savedSessionsList.length > 0 && (
+                  <button className="history-clear-btn" onClick={handleClearAllHistory} title="Xóa toàn bộ lịch sử">
+                    <Trash2 size={13} />
+                    <span>Xóa tất cả</span>
+                  </button>
+                )}
               </div>
-            )}
 
-            <div ref={messagesEndRef} />
-          </div>
+              <div className="history-quick-actions">
+                <button className="history-action-pill" onClick={handleCopySummary} title="Sao chép tóm tắt cuộc trò chuyện hiện tại">
+                  <ClipboardCopy size={14} />
+                  <span>Sao chép tóm tắt</span>
+                </button>
+                <button className="history-action-pill" onClick={handleExportChat} title="Tải xuống tệp Markdown (.md)">
+                  <FileDown size={14} />
+                  <span>Tải file (.md)</span>
+                </button>
+                <button className="history-action-pill highlight" onClick={handleReset} title="Bắt đầu phiên chat mới">
+                  <Plus size={14} />
+                  <span>Phiên mới</span>
+                </button>
+              </div>
 
-          <div className="chat-input-container">
-            <button
-              type="button"
-              className={`chat-voice-btn ${isListening ? 'listening' : ''}`}
-              onClick={toggleListening}
-              title={isListening ? 'Đang nghe... Nhấp để dừng' : 'Nói bằng giọng nói (Tiếng Việt)'}
-            >
-              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-              {isListening && <span className="mic-pulse-ring" />}
-            </button>
-            <input
-              ref={inputRef}
-              type="text"
-              className="chat-text-input"
-              placeholder={isListening ? '🎙️ Đang nghe giọng nói của bạn...' : 'Hỏi về dự án, kỹ năng, liên hệ...'}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
-            />
-            <button className={`chat-send-btn ${input.trim() && !isLoading ? 'active' : ''}`} onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
-              <Send size={16} />
-            </button>
-          </div>
+              <div className="history-sessions-list">
+                <div className="history-section-title">
+                  <History size={13} />
+                  <span>Các cuộc hội thoại đã lưu ({savedSessionsList.length})</span>
+                </div>
+
+                {savedSessionsList.length === 0 ? (
+                  <div className="history-empty-state">
+                    <MessageSquare size={32} className="empty-icon" />
+                    <p className="empty-title">Chưa có lịch sử trò chuyện</p>
+                    <span className="empty-desc">Các câu hỏi của bạn với NQK AI sẽ được tự động lưu tại đây.</span>
+                  </div>
+                ) : (
+                  savedSessionsList.map((s) => (
+                    <div
+                      key={s.id}
+                      className={`history-session-item ${s.id === sessionId ? 'active-session' : ''}`}
+                      onClick={() => handleSelectSession(s)}
+                    >
+                      <div className="session-item-icon">
+                        <MessageSquare size={16} />
+                      </div>
+                      <div className="session-item-content">
+                        <div className="session-item-title">{s.title || 'Cuộc trò chuyện'}</div>
+                        <div className="session-item-meta">
+                          <span>{s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : ''}</span>
+                          <span className="meta-dot">•</span>
+                          <span>{s.messages?.length || 0} tin nhắn</span>
+                          {s.id === sessionId && <span className="session-active-tag">Đang mở</span>}
+                        </div>
+                      </div>
+                      <button
+                        className="session-delete-btn"
+                        onClick={(e) => handleDeleteSession(e, s.id)}
+                        title="Xóa cuộc trò chuyện này"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="chat-messages-container">
+                {messages.map((m, idx) => (
+                  <ChatMessageItem
+                    key={m.id || idx}
+                    message={m}
+                    messageIndex={idx}
+                    sessionId={sessionId}
+                    projectsList={projectsList}
+                    articlesList={articlesList}
+                    resumesList={resumesList}
+                    onCloseMobile={handleCloseMobile}
+                    isSpeaking={speakingMessageId === (m.id || m.content.slice(0, 30))}
+                    onSpeak={handleSpeak}
+                    isLatestAssistant={idx === lastAssistantIndex}
+                    isLoading={isLoading}
+                    onSendChip={handleSend}
+                  />
+                ))}
+
+                {messages.length <= 1 && (
+                  <div className="chat-suggestions-container">
+                    <div className="suggestions-header">
+                      <Sparkles size={13} className="suggestions-sparkle" />
+                      <span>Mẫu câu hỏi gợi ý nhanh:</span>
+                    </div>
+                    <div className="suggestions-grid">
+                      {DEFAULT_SUGGESTIONS.map((sug, i) => (
+                        <button
+                          key={i}
+                          className="suggestion-chip-btn"
+                          onClick={() => handleSend(sug.text)}
+                          disabled={isLoading}
+                        >
+                          <span className="sug-icon">{sug.icon}</span>
+                          <span className="sug-text">{sug.text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="chat-input-container">
+                <button
+                  type="button"
+                  className={`chat-voice-btn ${isListening ? 'listening' : ''}`}
+                  onClick={toggleListening}
+                  title={isListening ? 'Đang nghe... Nhấp để dừng' : 'Nói bằng giọng nói (Tiếng Việt)'}
+                >
+                  {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                  {isListening && <span className="mic-pulse-ring" />}
+                </button>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className="chat-text-input"
+                  placeholder={isListening ? '🎙️ Đang nghe giọng nói của bạn...' : 'Hỏi về dự án, kỹ năng, liên hệ...'}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isLoading}
+                />
+                <button className={`chat-send-btn ${input.trim() && !isLoading ? 'active' : ''}`} onClick={() => handleSend()} disabled={!input.trim() || isLoading}>
+                  <Send size={16} />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
