@@ -72,28 +72,16 @@ export function ZaloIcon({ size = 20, className = '', style = {} }) {
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill="currentColor"
       className={`brand-icon brand-zalo ${className}`}
       style={style}
       aria-hidden="true"
     >
       <path
-        d="M21.5 11.5C21.5 6.8 17.25 3 12 3S2.5 6.8 2.5 11.5c0 2.7 1.35 5.1 3.5 6.7-.15.9-.55 2.4-1.6 3.45 0 0 2.15-.2 4-.1.4.75.2 1.55.3 2.35.3 5.25 0 9.5-3.8 9.5-8.5z"
-        fill="currentColor"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 2C6.48 2 2 6.03 2 11c0 2.87 1.5 5.43 3.84 7.03-.17 1.05-.63 2.57-1.84 3.72 0 0 2.37-.25 4.44-1.57.51.09 1.04.14 1.56.14 5.52 0 10-4.03 10-9s-4.48-9-10-9zm-3.5 13.5v-1.3l3.2-5.4H7.8V7.5h5.4v1.3L10 14.2h3.4v1.3H8.5z"
       />
-      <text
-        x="12"
-        y="14.2"
-        className="zalo-svg-text"
-        fill="#0b1222"
-        fontSize="7.8"
-        fontWeight="900"
-        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-        textAnchor="middle"
-        letterSpacing="-0.2px"
-      >
-        Zalo
-      </text>
     </svg>
   )
 }
