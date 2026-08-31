@@ -1,5 +1,6 @@
-import { ArrowUpCircle, BriefcaseBusiness as Linkedin, Code2 as Github, Mail, MapPin, Phone, Users as Facebook } from 'lucide-react'
+import { ArrowUpCircle, Mail, MapPin, Phone } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { FacebookIcon, GithubIcon, LinkedInIcon, TikTokIcon, ZaloIcon } from '../common/BrandIcons'
 import { useApiResource } from '../../hooks/useApiResource'
 import { getProfile } from '../../services/portfolioApi'
 
@@ -10,12 +11,19 @@ export function Footer() {
     email: 'hello@example.com',
     phone: '0969 895 549',
     location: 'Đồng Tháp, Việt Nam',
-    githubUrl: 'https://github.com/',
-    linkedinUrl: 'https://linkedin.com/',
-    facebookUrl: 'https://facebook.com/'
+    githubUrl: 'https://github.com/quockhoa53',
+    linkedinUrl: 'https://linkedin.com/in/quockhoa53',
+    facebookUrl: 'https://facebook.com/nguyenquockhoa5549',
+    tiktokUrl: 'https://tiktok.com/@nguyenquockhoa.dev',
+    zaloUrl: 'https://zalo.me/0969895549'
   }
 
   const phoneHref = (profile.phone || '0969895549').replace(/\s+/g, '')
+  const githubLink = profile.githubUrl || 'https://github.com/quockhoa53'
+  const linkedinLink = profile.linkedinUrl || 'https://linkedin.com/in/quockhoa53'
+  const facebookLink = profile.facebookUrl || 'https://facebook.com/nguyenquockhoa5549'
+  const tiktokLink = profile.tiktokUrl || 'https://tiktok.com/@nguyenquockhoa.dev'
+  const zaloLink = profile.zaloUrl || `https://zalo.me/${phoneHref}`
 
   return (
     <footer className="site-footer">
@@ -28,19 +36,64 @@ export function Footer() {
             Cảm ơn bạn đã ghé thăm portfolio. Hãy kết nối nếu bạn có dự án thú vị hoặc cơ hội muốn hợp tác!
           </p>
           <div className="social-row">
-            {profile.githubUrl && (
-              <a href={profile.githubUrl} target="_blank" rel="noreferrer" aria-label="Github">
-                <Github />
+            {facebookLink && (
+              <a
+                href={facebookLink}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Facebook"
+                className="social-facebook"
+                title="Facebook: Nguyễn Quốc Khoa"
+              >
+                <FacebookIcon size={20} />
               </a>
             )}
-            {profile.linkedinUrl && (
-              <a href={profile.linkedinUrl} target="_blank" rel="noreferrer" aria-label="LinkedIn">
-                <Linkedin />
+            {linkedinLink && (
+              <a
+                href={linkedinLink}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="LinkedIn"
+                className="social-linkedin"
+                title="LinkedIn: Nguyễn Quốc Khoa"
+              >
+                <LinkedInIcon size={19} />
               </a>
             )}
-            {profile.facebookUrl && (
-              <a href={profile.facebookUrl} target="_blank" rel="noreferrer" aria-label="Facebook">
-                <Facebook />
+            {githubLink && (
+              <a
+                href={githubLink}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="GitHub"
+                className="social-github"
+                title="GitHub: quockhoa53"
+              >
+                <GithubIcon size={20} />
+              </a>
+            )}
+            {tiktokLink && (
+              <a
+                href={tiktokLink}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="TikTok"
+                className="social-tiktok"
+                title="TikTok: @nguyenquockhoa.dev"
+              >
+                <TikTokIcon size={20} />
+              </a>
+            )}
+            {zaloLink && (
+              <a
+                href={zaloLink}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Zalo"
+                className="social-zalo"
+                title="Zalo: 0969 895 549"
+              >
+                <ZaloIcon size={22} />
               </a>
             )}
           </div>

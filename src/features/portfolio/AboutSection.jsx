@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Code2 } from 'lucide-react'
+import { GithubIcon, LinkedInIcon } from '../../components/common/BrandIcons'
 import { SocialLink } from '../../components/common/SocialLink'
 
 export function AboutSection({ profile }) {
@@ -11,8 +11,8 @@ export function AboutSection({ profile }) {
         <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">{profile.bio}</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <a className="rounded-xl bg-ink px-6 py-3 font-semibold text-white hover:bg-accent" href="#contact">Liên hệ tôi</a>
-          <SocialLink url={profile.githubUrl} label="GitHub"><Code2 /></SocialLink>
-          <SocialLink url={profile.linkedinUrl} label="LinkedIn"><BriefcaseBusiness /></SocialLink>
+          <SocialLink url={profile.githubUrl} label="GitHub"><GithubIcon size={18} /></SocialLink>
+          <SocialLink url={profile.linkedinUrl} label="LinkedIn"><LinkedInIcon size={18} /></SocialLink>
         </div>
       </div>
       <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-violet-500 to-cyan-400 p-2 shadow-2xl">

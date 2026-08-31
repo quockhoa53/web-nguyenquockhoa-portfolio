@@ -1,4 +1,5 @@
-import { BriefcaseBusiness as Linkedin, Code2 as Github, Mail, MapPin, Phone, Users as Facebook } from 'lucide-react'
+import { Mail, MapPin, Phone } from 'lucide-react'
+import { FacebookIcon } from '../components/common/BrandIcons'
 import { PageHero } from '../components/common/PageHero'
 import { ContactSection } from '../features/contact/ContactSection'
 import { useApiResource } from '../hooks/useApiResource'
@@ -11,9 +12,9 @@ export function ContactPage() {
     email: 'hello@example.com',
     phone: '0969 895 549',
     location: 'Đồng Tháp, Việt Nam',
-    facebookUrl: 'https://facebook.com',
-    githubUrl: 'https://github.com',
-    linkedinUrl: 'https://linkedin.com'
+    facebookUrl: 'https://facebook.com/nguyenquockhoa5549',
+    githubUrl: 'https://github.com/quockhoa53',
+    linkedinUrl: 'https://linkedin.com/in/quockhoa53'
   }
 
   return (
@@ -61,7 +62,7 @@ export function ContactPage() {
 
           {profile.facebookUrl && (
             <a href={profile.facebookUrl} target="_blank" rel="noreferrer" title="Facebook cá nhân">
-              <Facebook />
+              <FacebookIcon size={18} />
               <span>
                 <small>Facebook</small>
                 {profile.fullName || 'Nguyễn Quốc Khoa'}
