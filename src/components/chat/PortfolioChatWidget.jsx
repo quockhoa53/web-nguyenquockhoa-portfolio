@@ -450,6 +450,16 @@ export function PortfolioChatWidget() {
     return () => window.removeEventListener('storage', checkGuest)
   }, [])
 
+  // Pre-load Web Speech API voices on initialization
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices()
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices()
+      }
+    }
+  }, [])
+
   // Voice Interaction States
   const [isListening, setIsListening] = useState(false)
   const [speakingMessageId, setSpeakingMessageId] = useState(null)
@@ -511,17 +521,16 @@ export function PortfolioChatWidget() {
 
     if (!cleanText) return
 
-    setSpeakingMessageId(messageId)
-
     // 1. Instant Playback via Web Speech API (Instantaneous 0.05s start, 0 network lag)
-    if ('speechSynthesis' in window) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
+        window.speechSynthesis.cancel()
+        window.speechSynthesis.resume()
+
         const utterance = new SpeechSynthesisUtterance(cleanText)
         utterance.lang = 'vi-VN'
         utterance.rate = 1.0 // Natural, clear & friendly conversational pace
         utterance.pitch = 1.0
-        utterance.onend = () => setSpeakingMessageId(null)
-        utterance.onerror = () => setSpeakingMessageId(null)
 
         const voices = window.speechSynthesis.getVoices()
         // Priority: Vietnamese Natural/Neural voices (HoaiMy, Google Tiếng Việt, Linh, An)
@@ -532,12 +541,26 @@ export function PortfolioChatWidget() {
           utterance.voice = viVoice
         }
 
+        utterance.onstart = () => {
+          setSpeakingMessageId(messageId)
+        }
+        utterance.onend = () => {
+          setSpeakingMessageId(null)
+        }
+        utterance.onerror = (e) => {
+          console.warn('Speech synthesis playback error:', e)
+          setSpeakingMessageId(null)
+        }
+
+        setSpeakingMessageId(messageId)
         window.speechSynthesis.speak(utterance)
         return
       } catch (speechErr) {
         console.warn('Browser SpeechSynthesis error, falling back to server TTS:', speechErr)
       }
     }
+
+    setSpeakingMessageId(messageId)
 
     // 2. Cloud Server Neural TTS Fallback (when browser speech is unsupported)
     try {
