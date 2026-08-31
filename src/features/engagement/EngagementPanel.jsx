@@ -293,7 +293,8 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
               />
             </label>
             <button type="submit" className="identity-submit">
-              <Check size={16} style={{ marginRight: 6 }} /> Lưu thông tin & Tiếp tục
+              <Check size={18} />
+              <span>Lưu thông tin &amp; Tiếp tục</span>
             </button>
             <small>Email của bạn được bảo mật tuyệt đối và không hiển thị công khai.</small>
           </form>
