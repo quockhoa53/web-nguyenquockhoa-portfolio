@@ -28,7 +28,6 @@ import {
 } from 'lucide-react'
 import { getProjects, getKnowledgeArticles, getResumes } from '../../services/portfolioApi'
 import { API_BASE } from '../../services/httpClient'
-import { useToast } from '../common/ToastContext'
 import { ProjectChatCard } from './ProjectChatCard'
 import { ArticleChatCard } from './ArticleChatCard'
 import { ContactChatCard } from './ContactChatCard'
@@ -422,8 +421,6 @@ export function PortfolioChatWidget() {
   const [projectsList, setProjectsList] = useState([])
   const [articlesList, setArticlesList] = useState([])
   const [resumesList, setResumesList] = useState([])
-  
-  const toast = useToast()
 
   // Sync messages to localStorage and persistent sessions list
   useEffect(() => {
@@ -603,7 +600,6 @@ export function PortfolioChatWidget() {
   const toggleListening = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
-      toast.error('Trình duyệt hiện tại chưa hỗ trợ nhận diện giọng nói. Bạn vui lòng sử dụng Chrome hoặc Edge.')
       return
     }
     if (isListening) {
@@ -632,9 +628,6 @@ export function PortfolioChatWidget() {
       recognition.onerror = (e) => {
         console.warn('Speech recognition error:', e.error)
         setIsListening(false)
-        if (e.error === 'not-allowed') {
-          toast.error('Vui lòng cho phép quyền truy cập Microphone trên trình duyệt để nói.')
-        }
       }
       recognition.onend = () => {
         setIsListening(false)
@@ -645,7 +638,7 @@ export function PortfolioChatWidget() {
       console.warn('Failed to start speech recognition:', err)
       setIsListening(false)
     }
-  }, [isListening, toast])
+  }, [isListening])
 
   // Auto scroll to latest message
   useEffect(() => {
@@ -686,7 +679,6 @@ export function PortfolioChatWidget() {
       localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(welcome))
     } catch {}
     setShowHistory(false)
-    toast.info('Đã bắt đầu cuộc trò chuyện mới.')
   }
 
   function handleSelectSession(sessionItem) {
@@ -698,7 +690,6 @@ export function PortfolioChatWidget() {
       localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(sessionItem.messages || []))
     } catch {}
     setShowHistory(false)
-    toast.success('Đã tải cuộc trò chuyện.')
   }
 
   function handleDeleteSession(e, targetId) {
@@ -709,8 +700,6 @@ export function PortfolioChatWidget() {
     setSavedSessionsList(filtered)
     if (targetId === sessionId) {
       handleReset()
-    } else {
-      toast.info('Đã xóa cuộc trò chuyện khỏi lịch sử.')
     }
   }
 
@@ -719,7 +708,6 @@ export function PortfolioChatWidget() {
       localStorage.removeItem(STORAGE_KEY_SESSIONS)
       setSavedSessionsList([])
       handleReset()
-      toast.success('Đã xóa sạch toàn bộ lịch sử.')
     }
   }
 
@@ -977,7 +965,6 @@ function generateChatHtmlExport(messages, sessionId, guestName) {
 
 function handleExportChat() {
   if (messages.length <= 1) {
-    toast.info('Chưa có nội dung trò chuyện để tải về.')
     return
   }
   const htmlContent = generateChatHtmlExport(messages, sessionId, guestName)
@@ -988,14 +975,12 @@ function handleExportChat() {
   a.download = `hoi-thoai-nqk-ai-${sessionId}.html`
   a.click()
   URL.revokeObjectURL(url)
-  toast.success('Đã xuất lịch sử cuộc trò chuyện trực quan (.html)!')
 }
 
   function handleCopySummary() {
     const userQueries = messages.filter(m => m.role === 'user').map(m => `• ${m.content}`).join('\n')
     const summary = `📋 [TÓM TẮT CUỘC TRÒ CHUYỆN VỚI NQK AI]\n• Phiên chat: ${sessionId}\n• Thời gian: ${new Date().toLocaleString('vi-VN')}\n\nCác chủ đề đã trao đổi:\n${userQueries || '• Trao đổi thông tin năng lực và dự án của Nguyễn Quốc Khoa'}\n\nLiên hệ kỹ sư Nguyễn Quốc Khoa:\n• Email: nguyenquockhoa5549@gmail.com\n• SĐT / Zalo: 0969 895 549\n• Website: https://nguyenquockhoaportfolio.vercel.app`
     navigator.clipboard.writeText(summary)
-    toast.success('Đã sao chép tóm tắt cuộc trò chuyện vào clipboard!')
   }
 
   async function handleSend(textToSend) {
