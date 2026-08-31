@@ -1808,6 +1808,10 @@ button {
   box-shadow: 0 6px 18px rgba(0, 104, 255, 0.45);
 }
 
+.social-row a.social-zalo:hover .zalo-svg-text {
+  fill: #0068ff !important;
+}
+
 .social-row svg {
   width: 20px;
   height: 20px;
