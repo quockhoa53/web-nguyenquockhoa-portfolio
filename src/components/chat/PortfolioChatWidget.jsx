@@ -17,10 +17,13 @@ import {
   VolumeX,
   Square,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  ClipboardCopy,
+  FileDown
 } from 'lucide-react'
 import { getProjects, getKnowledgeArticles, getResumes } from '../../services/portfolioApi'
 import { API_BASE } from '../../services/httpClient'
+import { useToast } from '../common/ToastContext'
 import { ProjectChatCard } from './ProjectChatCard'
 import { ArticleChatCard } from './ArticleChatCard'
 import { ContactChatCard } from './ContactChatCard'
@@ -34,6 +37,43 @@ const DEFAULT_SUGGESTIONS = [
   { icon: '📄', text: 'Tải CV & hồ sơ năng lực của Khoa' },
   { icon: '📞', text: 'Làm thế nào để liên hệ và hợp tác với Khoa?' }
 ]
+
+function getContextualFollowUps(content) {
+  if (!content || typeof content !== 'string') return []
+  const c = content.toLowerCase()
+  if (c.includes('dự án') || c.includes('project') || c.includes('e-commerce') || c.includes('ticket') || c.includes('agent')) {
+    return [
+      { icon: '🛠️', text: 'Kiến trúc & Công nghệ của dự án này?' },
+      { icon: '💻', text: 'Xem mã nguồn GitHub & Demo' },
+      { icon: '📩', text: 'Tư vấn chi phí & triển khai dự án tương tự' }
+    ]
+  }
+  if (c.includes('kỹ năng') || c.includes('skill') || c.includes('spring boot') || c.includes('microservices') || c.includes('java') || c.includes('postgres')) {
+    return [
+      { icon: '🏢', text: 'Lịch sử kinh nghiệm tại các công ty?' },
+      { icon: '📄', text: 'Cho tôi xem bản CV của Quốc Khoa' },
+      { icon: '🚀', text: 'Các dự án tiêu biểu áp dụng công nghệ này' }
+    ]
+  }
+  if (c.includes('liên hệ') || c.includes('contact') || c.includes('email') || c.includes('sđt') || c.includes('zalo') || c.includes('tuyển dụng') || c.includes('hợp tác')) {
+    return [
+      { icon: '📅', text: 'Soạn thư mời phỏng vấn' },
+      { icon: '💬', text: 'Tư vấn dự án phần mềm' },
+      { icon: '📄', text: 'Tải bản CV PDF chính thức' }
+    ]
+  }
+  if (c.includes('bài viết') || c.includes('kiến thức') || c.includes('database') || c.includes('tối ưu')) {
+    return [
+      { icon: '💡', text: 'Các bài viết kiến thức khác của Khoa' },
+      { icon: '⚡', text: 'Kinh nghiệm tối ưu hóa Database' }
+    ]
+  }
+  return [
+    { icon: '🚀', text: 'Các dự án nổi bật của Khoa?' },
+    { icon: '⚡', text: 'Thế mạnh Backend & AI của Khoa' },
+    { icon: '📞', text: 'Làm sao để liên hệ với Khoa?' }
+  ]
+}
 
 function parseContactConfirm(content) {
   if (!content || typeof content !== 'string') return { text: content, contactData: null }
@@ -78,10 +118,14 @@ const ChatMessageItem = memo(function ChatMessageItem({
   resumesList,
   onCloseMobile,
   isSpeaking,
-  onSpeak
+  onSpeak,
+  isLatestAssistant,
+  isLoading,
+  onSendChip
 }) {
   const { text, contactData } = useMemo(() => parseContactConfirm(message.content), [message.content])
   const [feedbackRating, setFeedbackRating] = useState(null)
+  const contextualChips = useMemo(() => getContextualFollowUps(text), [text])
 
   const handleFeedback = useCallback(async (ratingVal) => {
     if (feedbackRating === ratingVal) return
@@ -236,6 +280,29 @@ const ChatMessageItem = memo(function ChatMessageItem({
                 </div>
               </div>
             )}
+
+            {/* Contextual Follow-up Chips for Assistant */}
+            {message.role === 'assistant' && isLatestAssistant && !isLoading && contextualChips.length > 0 && (
+              <div className="contextual-chips-container">
+                <div className="contextual-chips-label">
+                  <Sparkles size={11} className="chips-sparkle" />
+                  <span>Gợi ý câu hỏi tiếp theo:</span>
+                </div>
+                <div className="contextual-chips-grid">
+                  {contextualChips.map((chip, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="contextual-chip-item"
+                      onClick={() => onSendChip?.(chip.text)}
+                    >
+                      <span className="chip-icon">{chip.icon}</span>
+                      <span className="chip-text">{chip.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="typing-dots">
@@ -268,6 +335,8 @@ export function PortfolioChatWidget() {
   const [articlesList, setArticlesList] = useState([])
   const [resumesList, setResumesList] = useState([])
   
+  const toast = useToast()
+
   // Voice Interaction States
   const [isListening, setIsListening] = useState(false)
   const [speakingMessageId, setSpeakingMessageId] = useState(null)
@@ -285,12 +354,13 @@ export function PortfolioChatWidget() {
   }, [])
 
   const handleCloseMobile = useCallback(() => {
-    if (window.innerWidth < 768) setIsOpen(false)
+    if (window.innerWidth < 768) {
+      setIsOpen(false)
+    }
   }, [])
 
-  // Text-to-Speech (TTS) handler with ElevenLabs Neural Adam Voice + Automatic Web Speech Fallback
+  // Text-to-Speech (TTS) voice player
   const handleSpeak = useCallback(async (text, messageId) => {
-    // 1. If currently speaking this message, stop immediately
     if (speakingMessageId === messageId) {
       if (audioPlayerRef.current) {
         audioPlayerRef.current.pause()
@@ -385,22 +455,53 @@ export function PortfolioChatWidget() {
     }
   }, [speakingMessageId])
 
-  // Speech-to-Text (STT) voice input handler
+  // Speech-to-Text (STT) voice input handler with Realtime interim feedback & permission error handling
   const toggleListening = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) return;
-    if (isListening) {
-      recognitionRef.current?.stop()
+    if (!SpeechRecognition) {
+      toast.error('Trình duyệt hiện tại chưa hỗ trợ nhận diện giọng nói. Bạn vui lòng sử dụng Chrome hoặc Edge.')
       return
     }
-    const recognition = new SpeechRecognition()
-    recognition.lang = 'vi-VN'
-    recognition.onresult = (e) => setInput(e.results[0][0].transcript)
-    recognition.onstart = () => setIsListening(true)
-    recognition.onend = () => setIsListening(false)
-    recognitionRef.current = recognition
-    recognition.start()
-  }, [isListening])
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+      return
+    }
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'vi-VN'
+      recognition.continuous = false
+      recognition.interimResults = true
+
+      recognition.onstart = () => {
+        setIsListening(true)
+      }
+      recognition.onresult = (e) => {
+        let interimTranscript = ''
+        for (let i = e.resultIndex; i < e.results.length; ++i) {
+          interimTranscript += e.results[i][0].transcript
+        }
+        if (interimTranscript) {
+          setInput(interimTranscript)
+        }
+      }
+      recognition.onerror = (e) => {
+        console.warn('Speech recognition error:', e.error)
+        setIsListening(false)
+        if (e.error === 'not-allowed') {
+          toast.error('Vui lòng cho phép quyền truy cập Microphone trên trình duyệt để nói.')
+        }
+      }
+      recognition.onend = () => {
+        setIsListening(false)
+      }
+      recognitionRef.current = recognition
+      recognition.start()
+    } catch (err) {
+      console.warn('Failed to start speech recognition:', err)
+      setIsListening(false)
+    }
+  }, [isListening, toast])
 
   // Auto scroll to latest message
   useEffect(() => {
@@ -437,6 +538,32 @@ export function PortfolioChatWidget() {
           'Xin chào! 👋 Tôi là **NQK AI Assistant** - Trợ lý AI đại diện cho kỹ sư **Nguyễn Quốc Khoa**.\n\nBạn có thể hỏi tôi về các dự án thực tế, kinh nghiệm thiết kế Backend, tối ưu Database hoặc các giải pháp AI mà Khoa đã triển khai.'
       }
     ])
+  }
+
+  function handleExportChat() {
+    if (messages.length <= 1) {
+      toast.info('Chưa có nội dung trò chuyện để tải về.')
+      return
+    }
+    const transcript = messages
+      .map(m => `### ${m.role === 'user' ? '👤 Người dùng' : '🤖 NQK AI Assistant'}\n\n${m.content}\n\n---`)
+      .join('\n\n')
+    const header = `# Lịch Sử Hội Thoại Với NQK AI Assistant\n**Thời gian xuất**: ${new Date().toLocaleString('vi-VN')}\n**Phiên chat**: ${sessionId}\n\n---\n\n`
+    const blob = new Blob([header + transcript], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `hoi-thoai-nqk-ai-${sessionId}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success('Đã xuất lịch sử cuộc trò chuyện (.md)!')
+  }
+
+  function handleCopySummary() {
+    const userQueries = messages.filter(m => m.role === 'user').map(m => `• ${m.content}`).join('\n')
+    const summary = `📋 [TÓM TẮT CUỘC TRÒ CHUYỆN VỚI NQK AI]\n• Phiên chat: ${sessionId}\n• Thời gian: ${new Date().toLocaleString('vi-VN')}\n\nCác chủ đề đã trao đổi:\n${userQueries || '• Trao đổi thông tin năng lực và dự án của Nguyễn Quốc Khoa'}\n\nLiên hệ kỹ sư Nguyễn Quốc Khoa:\n• Email: nguyenquockhoa5549@gmail.com\n• SĐT / Zalo: 0969 895 549\n• Website: https://nguyenquockhoaportfolio.vercel.app`
+    navigator.clipboard.writeText(summary)
+    toast.success('Đã sao chép tóm tắt cuộc trò chuyện vào clipboard!')
   }
 
   async function handleSend(textToSend) {
@@ -503,6 +630,14 @@ export function PortfolioChatWidget() {
     }
   }
 
+  // Find last assistant message index to position follow-up chips
+  const lastAssistantIndex = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') return i
+    }
+    return -1
+  }, [messages])
+
   return (
     <div className="portfolio-chatbot-wrapper">
       {!isOpen && (
@@ -538,9 +673,21 @@ export function PortfolioChatWidget() {
               </div>
             </div>
             <div className="chat-header-actions">
-              <button className="header-icon-btn" onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
-              <button className="header-icon-btn" onClick={handleReset}><RotateCcw size={16} /></button>
-              <button className="header-icon-btn" onClick={() => setIsOpen(false)}><X size={18} /></button>
+              <button className="header-icon-btn" onClick={handleCopySummary} title="Sao chép tóm tắt cuộc trò chuyện">
+                <ClipboardCopy size={16} />
+              </button>
+              <button className="header-icon-btn" onClick={handleExportChat} title="Tải lịch sử cuộc trò chuyện (.md)">
+                <FileDown size={16} />
+              </button>
+              <button className="header-icon-btn" onClick={() => setIsExpanded(!isExpanded)} title={isExpanded ? 'Thu nhỏ' : 'Mở rộng'}>
+                {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+              <button className="header-icon-btn" onClick={handleReset} title="Làm mới cuộc trò chuyện">
+                <RotateCcw size={16} />
+              </button>
+              <button className="header-icon-btn" onClick={() => setIsOpen(false)} title="Đóng chat">
+                <X size={18} />
+              </button>
             </div>
           </div>
 
@@ -557,6 +704,9 @@ export function PortfolioChatWidget() {
                 onCloseMobile={handleCloseMobile}
                 isSpeaking={speakingMessageId === (m.id || m.content.slice(0, 30))}
                 onSpeak={handleSpeak}
+                isLatestAssistant={idx === lastAssistantIndex}
+                isLoading={isLoading}
+                onSendChip={handleSend}
               />
             ))}
 
@@ -601,14 +751,20 @@ export function PortfolioChatWidget() {
           </div>
 
           <div className="chat-input-container">
-            <button className={`chat-voice-btn ${isListening ? 'listening' : ''}`} onClick={toggleListening}>
+            <button
+              type="button"
+              className={`chat-voice-btn ${isListening ? 'listening' : ''}`}
+              onClick={toggleListening}
+              title={isListening ? 'Đang nghe... Nhấp để dừng' : 'Nói bằng giọng nói (Tiếng Việt)'}
+            >
               {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+              {isListening && <span className="mic-pulse-ring" />}
             </button>
             <input
               ref={inputRef}
               type="text"
               className="chat-text-input"
-              placeholder={isListening ? 'Đang lắng nghe...' : 'Hỏi về dự án, kỹ năng...'}
+              placeholder={isListening ? '🎙️ Đang nghe giọng nói của bạn...' : 'Hỏi về dự án, kỹ năng, liên hệ...'}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
