@@ -5,26 +5,33 @@ import {
   commentProject,
   getKnowledgeComments,
   getProjectComments,
+  getKnowledgeLikeStatus,
+  getProjectLikeStatus,
   likeKnowledge,
   likeProject,
   registerGuest,
   unlikeKnowledge,
   unlikeProject
 } from '../../services/portfolioApi'
+import { useToast } from '../../components/common/ToastContext'
 
 export function EngagementPanel({ type, id, initialLikes = 0 }) {
+  const toast = useToast()
+
   const api = useMemo(
     () =>
       type === 'knowledge'
         ? {
             comments: getKnowledgeComments,
             comment: commentKnowledge,
+            likeStatus: getKnowledgeLikeStatus,
             like: likeKnowledge,
             unlike: unlikeKnowledge
           }
         : {
             comments: getProjectComments,
             comment: commentProject,
+            likeStatus: getProjectLikeStatus,
             like: likeProject,
             unlike: unlikeProject
           },
@@ -39,7 +46,6 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
   const [pendingAction, setPendingAction] = useState(null) // 'like' | 'comment' | null
   const [guest, setGuest] = useState({ displayName: '', email: '' })
   const [hasRegistered, setHasRegistered] = useState(false)
-  const [notice, setNotice] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLiking, setIsLiking] = useState(false)
 
@@ -62,9 +68,11 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
     }
   }, [])
 
-  // Fetch comments
+  // Fetch comments and like status on mount / ID change
   useEffect(() => {
     if (!id) return
+
+    // 1. Fetch Comments
     api
       .comments(id)
       .then(res => {
@@ -72,11 +80,31 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
         if (Array.isArray(data)) setComments(data)
       })
       .catch(() => {})
+
+    // 2. Fetch Like Status for current visitor
+    api
+      .likeStatus(id)
+      .then(res => {
+        if (res) {
+          setLiked(Boolean(res.liked))
+          if (typeof res.likeCount === 'number') {
+            setLikes(res.likeCount)
+          }
+        }
+      })
+      .catch(() => {})
   }, [id, api])
 
   // Like / Unlike action
   const toggleLike = useCallback(async () => {
     if (isLiking) return
+    const token = localStorage.getItem('portfolio_guest_token')
+    if (!token) {
+      setPendingAction('like')
+      setIdentity(true)
+      return
+    }
+
     setIsLiking(true)
     try {
       const result = liked ? await api.unlike(id) : await api.like(id)
@@ -85,18 +113,23 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
         if (typeof result.likeCount === 'number') {
           setLikes(result.likeCount)
         }
+        if (result.liked) {
+          toast.success('Đã thả tim thành công! ❤️')
+        } else {
+          toast.info('Đã bỏ yêu thích.')
+        }
       }
     } catch (err) {
-      if (err?.status === 401 || !localStorage.getItem('portfolio_guest_token')) {
+      if (err?.status === 401) {
         setPendingAction('like')
         setIdentity(true)
       } else {
-        console.warn('Like error:', err)
+        toast.error('Không thể thực hiện thao tác. Vui lòng thử lại.')
       }
     } finally {
       setIsLiking(false)
     }
-  }, [api, id, liked, isLiking])
+  }, [api, id, liked, isLiking, toast])
 
   // Submit comment
   const submitComment = useCallback(
@@ -105,32 +138,38 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
       const trimmed = content.trim()
       if (!trimmed || isSubmitting) return
 
+      const token = localStorage.getItem('portfolio_guest_token')
+      if (!token) {
+        setPendingAction('comment')
+        setIdentity(true)
+        return
+      }
+
       setIsSubmitting(true)
       try {
         const result = await api.comment(id, { content: trimmed })
         setContent('')
-        setNotice(
-          result?.status === 'PENDING'
-            ? '✅ Bình luận của bạn đã gửi và đang chờ duyệt.'
-            : '✅ Đã đăng bình luận thành công!'
-        )
-        // Refresh comment list
-        api.comments(id).then(res => {
-          const data = res?.data || res
-          if (Array.isArray(data)) setComments(data)
-        }).catch(() => {})
+
+        // Realtime instant UI insertion: show the comment right away!
+        if (result && result.id) {
+          setComments(prev => {
+            if (prev.some(c => c.id === result.id)) return prev
+            return [...prev, result]
+          })
+        }
+        toast.success('Bình luận của bạn đã được đăng thành công!')
       } catch (err) {
-        if (err?.status === 401 || !localStorage.getItem('portfolio_guest_token')) {
+        if (err?.status === 401) {
           setPendingAction('comment')
           setIdentity(true)
         } else {
-          setNotice('❌ Có lỗi xảy ra khi gửi bình luận. Vui lòng thử lại.')
+          toast.error('Có lỗi xảy ra khi gửi bình luận. Vui lòng thử lại.')
         }
       } finally {
         setIsSubmitting(false)
       }
     },
-    [api, content, id, isSubmitting]
+    [api, content, id, isSubmitting, toast]
   )
 
   // Register Guest Info
@@ -153,7 +192,7 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
       )
       setHasRegistered(true)
       setIdentity(false)
-      setNotice('✅ Đã lưu thông tin khách thành công!')
+      toast.success('Đã lưu thông tin khách thành công!')
 
       // Auto-resume pending user action
       if (pendingAction === 'like') {
@@ -165,7 +204,7 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
       }
     } catch (err) {
       console.error('Failed to register guest:', err)
-      setNotice('❌ Không thể lưu thông tin. Vui lòng kiểm tra lại địa chỉ email.')
+      toast.error('Không thể lưu thông tin. Vui lòng kiểm tra lại địa chỉ email.')
     }
   }
 
@@ -174,16 +213,17 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
       <div className="engagement-head">
         <div>
           <span>COMMUNITY</span>
-          <h2>Yêu thích & thảo luận</h2>
+          <h2>Yêu thích &amp; thảo luận</h2>
         </div>
         <button
           type="button"
           className={`engagement-like-btn ${liked ? 'liked' : ''}`}
           onClick={toggleLike}
           disabled={isLiking}
+          title={liked ? 'Nhấp để bỏ thích' : 'Nhấp để thả tim'}
         >
-          <Heart fill={liked ? 'currentColor' : 'none'} size={18} />
-          <b>{likes}</b> Yêu thích
+          <Heart fill={liked ? '#ef4444' : 'none'} color={liked ? '#ef4444' : 'currentColor'} size={18} />
+          <b>{likes}</b> {liked ? 'Đã thích' : 'Yêu thích'}
         </button>
       </div>
 
@@ -226,15 +266,13 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
         </button>
       </form>
 
-      {notice && <p className="engagement-notice">{notice}</p>}
-
       <div className="comment-list">
         <h3>
           <MessageCircle size={18} />
           {comments.length} bình luận
         </h3>
         {comments.length === 0 ? (
-          <p className="no-comments-msg">Chưa có bình luận được duyệt. Hãy là người đầu tiên chia sẻ!</p>
+          <p className="no-comments-msg">Chưa có bình luận nào. Hãy là người đầu tiên chia sẻ suy nghĩ của bạn!</p>
         ) : (
           comments.map(c => (
             <article key={c.id}>
@@ -271,7 +309,7 @@ export function EngagementPanel({ type, id, initialLikes = 0 }) {
               <UserRound size={24} />
             </div>
             <h3>Thông tin khách</h3>
-            <p>Nhập thông tin một lần để Thả tim & Bình luận trên toàn bộ hệ thống.</p>
+            <p>Nhập thông tin một lần để Thả tim &amp; Bình luận trên toàn bộ hệ thống.</p>
             <label>
               Tên hiển thị
               <input

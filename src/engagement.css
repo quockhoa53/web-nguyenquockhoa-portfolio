@@ -77,27 +77,38 @@
 }
 
 .engagement-like-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  border: 1px solid #fecdd3;
-  background: var(--surface, #1e293b);
-  color: #e11d48;
-  border-radius: 99px;
-  padding: 10px 16px;
+  gap: 8px;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  background: rgba(244, 63, 94, 0.08);
+  color: #fda4af;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .engagement-like-btn:hover {
-  transform: scale(1.04);
-  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.2);
+  transform: scale(1.05);
+  background: rgba(244, 63, 94, 0.18);
+  border-color: rgba(244, 63, 94, 0.6);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(244, 63, 94, 0.35);
 }
 
 .engagement-like-btn.liked {
-  background: #fff1f2;
-  color: #e11d48;
-  border-color: #f43f5e;
+  background: linear-gradient(135deg, #e11d48, #be123c) !important;
+  color: #ffffff !important;
+  border-color: #f43f5e !important;
+  box-shadow: 0 4px 20px rgba(225, 29, 72, 0.45) !important;
+}
+
+.engagement-like-btn.liked:hover {
+  background: linear-gradient(135deg, #be123c, #9f1239) !important;
+  box-shadow: 0 6px 24px rgba(225, 29, 72, 0.6) !important;
 }
 
 /* Identity Modal Styling Fix */
