@@ -81,7 +81,7 @@ function getContextualFollowUps(content) {
 }
 
 function parseContactConfirm(content) {
-  if (!content || typeof content !== 'string') return { text: content, contactData: null }
+  if (!content || typeof content !== 'string') return { text: '', contactData: null }
 
   // 1. Strip internal model thinking process (<think>...</think> and unclosed streaming <think>...)
   let cleanContent = content.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<think>[\s\S]*$/gi, '').trim()
@@ -104,9 +104,18 @@ function parseContactConfirm(content) {
         }
         const fullTag = cleanContent.slice(tagStart, jsonEnd + 2)
         const cleanText = cleanContent.replace(fullTag, '').trim()
-        return { text: cleanText, contactData }
+        return {
+          text: cleanText || 'Dưới đây là thông tin phiếu liên hệ để bạn xác nhận và gửi trực tiếp tới anh Khoa:',
+          contactData
+        }
       } catch (e) {
         console.warn('Failed to parse contact confirmation JSON:', e)
+        const fullTag = cleanContent.slice(tagStart, jsonEnd + 2)
+        const cleanText = cleanContent.replace(fullTag, '').trim()
+        return {
+          text: cleanText || 'Dạ bạn có thể truy cập trực tiếp trang [Mục Liên Hệ](/contact) để gửi thông tin hoặc trao đổi nhanh với anh Khoa nhé! ✨',
+          contactData: null
+        }
       }
     }
   }
@@ -227,6 +236,8 @@ const ChatMessageItem = memo(function ChatMessageItem({
     }
   }), [projectsList, articlesList, resumesList, onCloseMobile])
 
+  const hasContent = Boolean((text && text.trim()) || contactData)
+
   return (
     <div className={`chat-bubble-row ${message.role === 'user' ? 'row-user' : 'row-bot'}`}>
       {message.role === 'assistant' && (
@@ -236,9 +247,9 @@ const ChatMessageItem = memo(function ChatMessageItem({
       )}
 
       <div className={`chat-bubble ${message.role === 'user' ? 'bubble-user' : 'bubble-bot'}`}>
-        {message.content ? (
+        {hasContent ? (
           <>
-            {text && (
+            {text && text.trim() && (
               <div className="chat-markdown-renderer">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                   {text}
@@ -246,11 +257,11 @@ const ChatMessageItem = memo(function ChatMessageItem({
               </div>
             )}
             {contactData && (
-              <div style={{ marginTop: text ? 10 : 0 }}>
+              <div style={{ marginTop: text && text.trim() ? 10 : 0 }}>
                 <ContactConfirmChatCard data={contactData} />
               </div>
             )}
-            {message.role === 'assistant' && text && (
+            {message.role === 'assistant' && text && text.trim() && (
               <div className="msg-toolbar">
                 <button
                   type="button"
@@ -309,11 +320,15 @@ const ChatMessageItem = memo(function ChatMessageItem({
               </div>
             )}
           </>
-        ) : (
+        ) : isLoading ? (
           <div className="typing-dots">
             <span />
             <span />
             <span />
+          </div>
+        ) : (
+          <div className="chat-markdown-renderer">
+            Dạ, tôi đã nhận được thông tin từ bạn. Bạn vui lòng cho tôi biết câu hỏi hoặc yêu cầu cụ thể để tôi hỗ trợ bạn tốt nhất nhé! ✨
           </div>
         )}
       </div>
@@ -1007,6 +1022,13 @@ function handleExportChat() {
             }
           }
         }
+        if (!accumulated || !accumulated.trim()) {
+          const fallbackReply = generateClientFallbackReply(query)
+          setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackReply } : m))
+        }
+      } else {
+        const fallbackReply = generateClientFallbackReply(query)
+        setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackReply } : m))
       }
     } catch (err) {
       const fallbackReply = generateClientFallbackReply(query)
