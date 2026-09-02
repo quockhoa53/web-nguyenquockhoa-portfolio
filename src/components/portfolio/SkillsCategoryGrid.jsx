@@ -48,10 +48,24 @@ export const CATEGORY_META = {
   }
 }
 
+const CATEGORY_ORDER = [
+  'backend & architecture',
+  'database',
+  'data processing',
+  'ai & tools',
+  'frontend',
+  'devops & cloud'
+]
+
+function getCategoryPriority(catKey) {
+  const idx = CATEGORY_ORDER.indexOf(catKey)
+  return idx !== -1 ? idx : 99
+}
+
 export function SkillsCategoryGrid({ skills = [] }) {
-  const categorizedSkills = useMemo(() => {
+  const sortedCategories = useMemo(() => {
     const groups = {}
-    if (!Array.isArray(skills)) return groups
+    if (!Array.isArray(skills)) return []
 
     skills.forEach((s) => {
       if (!s || !s.name) return
@@ -66,10 +80,16 @@ export function SkillsCategoryGrid({ skills = [] }) {
     Object.keys(groups).forEach((cat) => {
       groups[cat].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
     })
-    return groups
+
+    // Sort categories by predefined priority for balanced 2x2 grid
+    return Object.entries(groups).sort(([catA], [catB]) => {
+      const pA = getCategoryPriority(catA.trim().toLowerCase())
+      const pB = getCategoryPriority(catB.trim().toLowerCase())
+      return pA - pB
+    })
   }, [skills])
 
-  if (Object.keys(categorizedSkills).length === 0) {
+  if (sortedCategories.length === 0) {
     return (
       <div className="empty-state-box">
         <Code2 className="empty-icon" />
@@ -81,7 +101,7 @@ export function SkillsCategoryGrid({ skills = [] }) {
 
   return (
     <div className="skills-category-grid">
-      {Object.entries(categorizedSkills).map(([catName, items]) => {
+      {sortedCategories.map(([catName, items]) => {
         const catKey = catName.trim().toLowerCase()
         const meta = CATEGORY_META[catKey] || {
           icon: Wrench,

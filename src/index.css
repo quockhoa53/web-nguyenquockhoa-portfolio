@@ -5050,12 +5050,22 @@ button {
 /* ================= TECHNICAL SKILL CATEGORY CARDS (NO PERCENTAGES) ================= */
 .skills-category-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin-top: 32px;
 }
 
+@media (max-width: 900px) {
+  .skills-category-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
 .skill-category-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   background: var(--surface, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 20px;
