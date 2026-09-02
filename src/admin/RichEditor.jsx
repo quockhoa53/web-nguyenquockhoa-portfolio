@@ -8,11 +8,52 @@ const editorContentStyle = `
     font-size: 16px; line-height: 1.8; }
   h1, h2, h3, h4 { color: #0f172a; line-height: 1.3; margin: 1.5em 0 .6em; }
   h1 { font-size: 2.25rem; } h2 { font-size: 1.75rem; } h3 { font-size: 1.35rem; }
-  p { margin: 0 0 1em; } img { max-width: 100%; height: auto; border-radius: 12px; }
+  p { margin: 0 0 1em; text-indent: 0 !important; }
+  img { max-width: 100%; height: auto; border-radius: 12px; }
   blockquote { margin: 1.5em 0; padding: 12px 20px; border-left: 4px solid #6366f1; background: #f8fafc; }
-  pre { padding: 18px; overflow: auto; border-radius: 10px; background: #0f172a; color: #e2e8f0; font-family: monospace; }
+  
+  /* Multiline Unified Code Block */
+  pre {
+    padding: 16px 20px;
+    overflow-x: auto;
+    border-radius: 12px;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+    font-size: 13.5px;
+    line-height: 1.7;
+    margin: 1.4em 0;
+    border: 1px solid #334155;
+    tab-size: 2;
+    text-indent: 0 !important;
+    white-space: pre-wrap !important;
+    word-break: break-word;
+  }
+  pre code {
+    background: transparent !important;
+    padding: 0 !important;
+    color: inherit !important;
+    font-size: inherit !important;
+    border-radius: 0 !important;
+    border: none !important;
+    text-indent: 0 !important;
+    display: block;
+  }
+
+  /* Inline Code Tag */
+  code:not(pre code) {
+    font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+    font-size: 0.88em;
+    background: #f1f5f9;
+    color: #0284c7;
+    padding: 2px 6px;
+    border-radius: 5px;
+    border: 1px solid #e2e8f0;
+    text-indent: 0 !important;
+  }
+
   pre.mermaid { background: #0f172a; border: 1px solid #38bdf8; color: #38bdf8; padding: 16px; border-radius: 10px; font-size: 13px; }
-  table { width: 100%; border-collapse: collapse; } th, td { padding: 10px; border: 1px solid #cbd5e1; }
+  table { width: 100%; border-collapse: collapse; margin: 1.5em 0; } th, td { padding: 10px; border: 1px solid #cbd5e1; }
   a { color: #4f46e5; }
   .architecture-diagram-container { border: 1px dashed #0284c7; padding: 12px; border-radius: 8px; margin: 16px 0; background: rgba(2, 132, 199, 0.03); }
 `
@@ -111,7 +152,7 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
           resize: 'both',
           menubar: 'file edit view insert format tools table help',
           plugins: 'advlist anchor autolink charmap code codesample emoticons fullscreen image link lists media preview searchreplace table visualblocks wordcount',
-          toolbar: 'undo redo | blocks fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | archstudio | codesample link image table | removeformat code preview fullscreen',
+          toolbar: 'undo redo | blocks fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | codeblock archstudio | link image table | removeformat code preview fullscreen',
           toolbar_mode: 'wrap',
           contextmenu: 'link image table',
           image_advtab: true,
@@ -133,6 +174,26 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
             }
           },
           setup: (editor) => {
+            // 1. Custom Codeblock insertion button
+            editor.ui.registry.addButton('codeblock', {
+              text: '💻 Khối Code',
+              tooltip: 'Tạo hoặc chuyển đoạn văn bản đã chọn thành Khối Code nhiều dòng đẹp mắt',
+              onAction: () => {
+                const selectedText = editor.selection.getContent({ format: 'text' })
+                if (selectedText && selectedText.trim()) {
+                  const escaped = selectedText
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .trim()
+                  editor.insertContent(`<pre><code>${escaped}</code></pre><p>&nbsp;</p>`)
+                } else {
+                  editor.insertContent('<pre><code>// Nhập mã code của bạn vào đây...\n</code></pre><p>&nbsp;</p>')
+                }
+              },
+            })
+
+            // 2. Custom Architecture Studio button
             editor.ui.registry.addButton('archstudio', {
               text: '🏛️ Chèn Sơ Đồ',
               tooltip: 'Mở Architecture Studio để vẽ và chèn sơ đồ kiến trúc ngay tại vị trí con trỏ',

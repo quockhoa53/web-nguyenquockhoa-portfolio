@@ -4092,23 +4092,41 @@ div.tox.tox-tinymce-aux {
   padding: 16px 20px;
   border-radius: 12px;
   overflow-x: auto;
-  font-family: monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
   font-size: 13.5px;
+  line-height: 1.7;
   margin: 1.5em 0;
+  border: 1px solid #334155;
+  text-indent: 0 !important;
+  white-space: pre-wrap !important;
+  tab-size: 2 !important;
 }
 
-.detail-rich-preview code {
-  font-family: monospace;
-  font-size: 0.9em;
+.detail-rich-preview pre:not(.mermaid) code {
+  background: transparent !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  border: none !important;
+  text-indent: 0 !important;
+  box-shadow: none !important;
+}
+
+.detail-rich-preview code:not(pre code) {
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.88em;
   background: var(--adm-surface-subtle, #f1f5f9);
   padding: 2px 6px;
-  border-radius: 4px;
-  color: #d946ef;
+  border-radius: 5px;
+  color: #0284c7;
+  border: 1px solid var(--adm-border, #e2e8f0);
+  text-indent: 0 !important;
 }
 
-.dark .detail-rich-preview code {
+.dark .detail-rich-preview code:not(pre code) {
   background: rgba(255, 255, 255, 0.08);
-  color: #f472b6;
+  color: #38bdf8;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 
