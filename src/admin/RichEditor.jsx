@@ -77,8 +77,6 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
 
     const htmlToInsert = `
 <div class="architecture-diagram-container" data-title="${title || 'Sơ đồ Kiến trúc'}" data-desc="${description || ''}">
-  <h4 style="color:#0284c7; margin: 18px 0 8px; font-weight: 800;">🏛️ ${title || 'Sơ đồ Kiến trúc Hệ thống'}</h4>
-  ${description ? `<p style="color:#64748b; font-size:14px; margin-bottom:12px;">${description}</p>` : ''}
   <pre class="mermaid">${escapedCode}</pre>
 </div>
 <p>&nbsp;</p>

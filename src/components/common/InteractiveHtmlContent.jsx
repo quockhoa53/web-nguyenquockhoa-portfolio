@@ -2,6 +2,36 @@ import { useEffect, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArchitectureViewer } from './ArchitectureViewer'
 
+function isMermaidCode(text) {
+  if (!text || typeof text !== 'string') return false
+  const trimmed = text.trim()
+  if (!trimmed) return false
+
+  // Standard Mermaid diagram declaration header
+  if (/^(graph\s+(TD|TB|BT|RL|LR)|flowchart\s+(TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap|quadrantChart|journey|gitGraph|architecture-beta|packet-beta)/m.test(trimmed)) {
+    return true
+  }
+
+  // Fragment of mermaid diagram (e.g. node definitions and connections)
+  if (
+    (trimmed.includes('-->') || trimmed.includes('-.->') || trimmed.includes('==>')) &&
+    (trimmed.includes('["') || trimmed.includes('("') || trimmed.includes('{"') || trimmed.includes('classDef') || trimmed.includes('subgraph'))
+  ) {
+    return true
+  }
+
+  return false
+}
+
+function cleanMermaidCode(text) {
+  let trimmed = (text || '').trim()
+  // If it's a flowchart fragment missing header, default to graph TD
+  if (!/^(graph\s+(TD|TB|BT|RL|LR)|flowchart\s+(TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap|quadrantChart|journey|gitGraph|architecture-beta)/m.test(trimmed)) {
+    trimmed = 'graph TD\n' + trimmed
+  }
+  return trimmed
+}
+
 export function InteractiveHtmlContent({ html = '', className = '' }) {
   const containerRef = useRef(null)
   const rootsRef = useRef([])
@@ -20,41 +50,72 @@ export function InteractiveHtmlContent({ html = '', className = '' }) {
     })
     rootsRef.current = []
 
-    // Find all mermaid and pre/code blocks
-    const nodes = el.querySelectorAll('pre, code, div.architecture-diagram-container')
     const seen = new Set()
     let idxCounter = 0
 
-    nodes.forEach(node => {
-      if (seen.has(node) || node.closest('.arch-dynamic-mount-slot')) return
+    // 1. First pass: Handle all explicit architecture containers
+    const explicitContainers = el.querySelectorAll('.architecture-diagram-container')
+    explicitContainers.forEach(container => {
+      if (seen.has(container) || container.closest('.arch-dynamic-mount-slot')) return
+
+      const codeEl = container.querySelector('pre, code')
+      const rawText = codeEl ? codeEl.textContent : container.textContent
+      const diagramCode = cleanMermaidCode(rawText)
+
+      const title =
+        container.getAttribute('data-title') ||
+        container.querySelector('h4, h3, h2')?.textContent?.replace(/^[🏛️\s]+/, '') ||
+        'Sơ đồ Kiến trúc Hệ thống'
+
+      const description =
+        container.getAttribute('data-desc') ||
+        container.querySelector('p')?.textContent ||
+        ''
+
+      seen.add(container)
+      container.querySelectorAll('*').forEach(child => seen.add(child))
+
+      const mountDiv = document.createElement('div')
+      mountDiv.className = 'arch-dynamic-mount-slot'
+
+      container.parentNode.insertBefore(mountDiv, container)
+      container.style.display = 'none'
+
+      idxCounter++
+      const root = createRoot(mountDiv)
+      root.render(
+        <ArchitectureViewer
+          key={`arch-explicit-${idxCounter}-${Date.now()}`}
+          diagramCode={diagramCode}
+          title={title}
+          description={description}
+        />
+      )
+      rootsRef.current.push(root)
+    })
+
+    // 2. Second pass: Handle any standalone pre, code, p, or div blocks with mermaid code
+    const standaloneNodes = el.querySelectorAll('pre, code, p, div')
+    standaloneNodes.forEach(node => {
+      if (seen.has(node) || node.closest('.arch-dynamic-mount-slot') || node.closest('.architecture-diagram-container')) return
 
       const text = node.textContent.trim()
       if (!text) return
 
-      const isExplicitMermaid =
-        node.classList.contains('mermaid') ||
-        node.classList.contains('language-mermaid') ||
-        node.classList.contains('architecture-diagram-container')
+      const isExplicitClass = node.classList.contains('mermaid') || node.classList.contains('language-mermaid')
+      const isAuto = isMermaidCode(text)
 
-      // Auto-detect Mermaid flowchart/graph/diagram syntax
-      const isAutoMermaid = /^(graph\s+(TD|TB|BT|RL|LR)|flowchart\s+(TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap|quadrantChart|journey|gitGraph|architecture-beta)/m.test(text)
-
-      if (isExplicitMermaid || isAutoMermaid) {
+      if (isExplicitClass || isAuto) {
         seen.add(node)
-        const parentContainer = node.closest('.architecture-diagram-container')
-        const title =
-          parentContainer?.getAttribute('data-title') ||
-          node.getAttribute('data-title') ||
-          'Sơ đồ Kiến trúc Hệ thống'
-        const description =
-          parentContainer?.getAttribute('data-desc') ||
-          node.getAttribute('data-desc') ||
-          ''
+        node.querySelectorAll('*').forEach(child => seen.add(child))
 
-        // Target element to replace
-        const mountTarget =
-          parentContainer ||
-          (node.tagName === 'CODE' && node.parentElement?.tagName === 'PRE' ? node.parentElement : node)
+        const diagramCode = cleanMermaidCode(text)
+        const title = node.getAttribute('data-title') || 'Sơ đồ Kiến trúc Hệ thống'
+        const description = node.getAttribute('data-desc') || ''
+
+        const mountTarget = (node.tagName === 'CODE' && node.parentElement?.tagName === 'PRE')
+          ? node.parentElement
+          : node
 
         seen.add(mountTarget)
 
@@ -68,8 +129,8 @@ export function InteractiveHtmlContent({ html = '', className = '' }) {
         const root = createRoot(mountDiv)
         root.render(
           <ArchitectureViewer
-            key={`arch-diag-${idxCounter}-${Date.now()}`}
-            diagramCode={text}
+            key={`arch-auto-${idxCounter}-${Date.now()}`}
+            diagramCode={diagramCode}
             title={title}
             description={description}
           />
