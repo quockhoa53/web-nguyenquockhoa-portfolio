@@ -6042,9 +6042,15 @@ button {
 .article-engagement-container {
   margin-top: 45px;
   border-radius: 24px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  padding: 34px 40px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+
+.dark .article-engagement-container {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.75) 0%, rgba(10, 15, 29, 0.85) 100%);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  padding: 34px 40px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(16px);
 }
