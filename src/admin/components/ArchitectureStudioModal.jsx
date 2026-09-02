@@ -16,8 +16,6 @@ import {
   Link2,
   Palette,
   Plus,
-  Radio,
-  RefreshCw,
   RotateCcw,
   Search,
   Server,
@@ -54,10 +52,7 @@ export const COLOR_SWATCHES = [
   { label: 'Emerald', color: '#10b981' },
   { label: 'Amber', color: '#f59e0b' },
   { label: 'Rose Red', color: '#f43f5e' },
-  { label: 'Purple', color: '#8b5cf6' },
-  { label: 'Pink', color: '#ec4899' },
-  { label: 'Teal', color: '#06b6d4' },
-  { label: 'Dark Slate', color: '#334155' }
+  { label: 'Purple', color: '#8b5cf6' }
 ]
 
 // 5 Pre-defined Architecture Templates in Visual Graph Format
@@ -278,9 +273,8 @@ export function ArchitectureStudioModal({
   initialTitle = 'Sơ đồ Kiến trúc Hệ thống',
   onInsert
 }) {
-  const [activeTab, setActiveTab] = useState('visual') // 'visual' | 'code' | 'preview'
+  const [activeTab, setActiveTab] = useState('visual') // 'visual' | 'code'
   const [title, setTitle] = useState(initialTitle || 'Sơ đồ Kiến trúc Hệ thống')
-  const [description, setDescription] = useState('')
   const [templatesDropdownOpen, setTemplatesDropdownOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [animatedFlow, setAnimatedFlow] = useState(true)
@@ -294,7 +288,6 @@ export function ArchitectureStudioModal({
 
   // Selected Elements for Interaction
   const [selectedNodeId, setSelectedNodeId] = useState(() => ARCHITECTURE_PRESETS[0].nodes[0]?.id || null)
-  const [selectedEdgeId, setSelectedEdgeId] = useState(null)
 
   // Form State for Adding New Connection from Selected Node
   const [newTargetNodeId, setNewTargetNodeId] = useState('')
@@ -317,7 +310,6 @@ export function ArchitectureStudioModal({
   // Apply a Preset
   function handleSelectPreset(preset) {
     setTitle(preset.title.replace(/^[^\s]+\s/, ''))
-    setDescription(preset.description)
     setGraph({
       direction: preset.direction,
       nodes: JSON.parse(JSON.stringify(preset.nodes)),
@@ -326,7 +318,6 @@ export function ArchitectureStudioModal({
     setIsRawCodeDirty(false)
     setTemplatesDropdownOpen(false)
     setSelectedNodeId(preset.nodes[0]?.id || null)
-    setSelectedEdgeId(null)
   }
 
   // Clear Canvas
@@ -339,7 +330,6 @@ export function ArchitectureStudioModal({
       })
       setIsRawCodeDirty(false)
       setSelectedNodeId(null)
-      setSelectedEdgeId(null)
     }
   }
 
@@ -358,14 +348,7 @@ export function ArchitectureStudioModal({
       nodes: [...prev.nodes, newNode]
     }))
     setSelectedNodeId(newId)
-    setSelectedEdgeId(null)
     setIsRawCodeDirty(false)
-  }
-
-  // Select Node
-  function handleSelectNode(nodeId) {
-    setSelectedNodeId(nodeId)
-    setSelectedEdgeId(null)
   }
 
   // Update selected Node Label
@@ -437,18 +420,6 @@ export function ArchitectureStudioModal({
       ...prev,
       edges: prev.edges.filter(e => e.id !== edgeId)
     }))
-    if (selectedEdgeId === edgeId) {
-      setSelectedEdgeId(null)
-    }
-    setIsRawCodeDirty(false)
-  }
-
-  // Update Existing Edge Label
-  function handleUpdateEdgeLabel(edgeId, newLabel) {
-    setGraph(prev => ({
-      ...prev,
-      edges: prev.edges.map(e => e.id === edgeId ? { ...e, label: newLabel } : e)
-    }))
     setIsRawCodeDirty(false)
   }
 
@@ -466,7 +437,7 @@ export function ArchitectureStudioModal({
     if (onInsert) {
       onInsert({
         title,
-        description,
+        description: '',
         code: rawCode
       })
     }
@@ -486,54 +457,61 @@ export function ArchitectureStudioModal({
 
   return (
     <div className="arch-studio-fullscreen-page">
-      {/* Top Header Bar */}
-      <div className="arch-studio-header">
-        <div className="arch-studio-title-wrap">
+      {/* 1. Single Ultra-Clean Top App Bar */}
+      <div className="arch-studio-header-clean">
+        {/* Left: Back + Editable Title + Direction */}
+        <div className="clean-bar-left">
           <button
             type="button"
-            className="btn-back-to-project"
+            className="btn-back-clean"
             onClick={onClose}
-            title="Quay lại trình soạn thảo dự án"
+            title="Quay lại trình soạn thảo"
           >
-            <ArrowRight style={{ transform: 'rotate(180deg)' }} size={16} />
-            <span>Quay lại Dự Án</span>
+            <ArrowRight style={{ transform: 'rotate(180deg)' }} size={15} />
+            <span>Quay lại</span>
           </button>
-          <div className="arch-studio-icon">
-            <Workflow size={20} />
+
+          <div className="clean-divider" />
+
+          <div className="clean-title-edit-wrap">
+            <input
+              type="text"
+              className="clean-title-input"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Tên sơ đồ..."
+              title="Bấm để đổi tên sơ đồ"
+            />
           </div>
-          <div>
-            <h3>Visual Architecture Studio IDE</h3>
-            <p>Trực tiếp vẽ, nối mũi tên và tự động sinh code Mermaid cho dự án.</p>
-          </div>
+
+          <button
+            type="button"
+            className="clean-direction-toggle"
+            onClick={handleToggleDirection}
+            title="Đổi hướng sơ đồ: Dọc (TD) hoặc Ngang (LR)"
+          >
+            <ArrowDownUp size={13} />
+            <span>{graph.direction === 'TD' ? 'Hướng Dọc' : 'Hướng Ngang'}</span>
+          </button>
         </div>
 
-        <div className="arch-studio-header-actions">
-          {/* Animated Data Flow Toggle Button */}
-          <button
-            type="button"
-            className={`btn-animated-flow-toggle ${animatedFlow ? 'active' : ''}`}
-            onClick={() => setAnimatedFlow(prev => !prev)}
-            title="Bật/Tắt hiệu ứng dòng điện/hạt dữ liệu chạy trên đường mũi tên"
-          >
-            <Activity size={14} className={animatedFlow ? 'pulse-icon' : ''} />
-            <span>{animatedFlow ? '⚡ Luồng Dữ Liệu: BẬT' : 'Luồng Dữ Liệu: TẮT'}</span>
-          </button>
-
-          {/* Template Selector Dropdown Button */}
+        {/* Center: Presets Dropdown + View Switcher */}
+        <div className="clean-bar-center">
+          {/* Preset Selector */}
           <div className="arch-template-dropdown-wrap">
             <button
               type="button"
-              className="btn-dropdown-trigger"
+              className="clean-dropdown-btn"
               onClick={() => setTemplatesDropdownOpen(prev => !prev)}
             >
-              <BookOpen size={14} />
-              <span>📚 Xem 5 Mẫu Kiến Trúc</span>
-              <ChevronDown size={14} />
+              <BookOpen size={13} />
+              <span>📚 5 Mẫu Kiến Trúc</span>
+              <ChevronDown size={12} />
             </button>
 
             {templatesDropdownOpen && (
               <div className="arch-templates-menu">
-                <div className="templates-menu-header">Mẫu kiến trúc thực chiến chuẩn:</div>
+                <div className="templates-menu-header">Chọn mẫu kiến trúc chuẩn:</div>
                 {ARCHITECTURE_PRESETS.map(preset => (
                   <button
                     key={preset.id}
@@ -549,131 +527,100 @@ export function ArchitectureStudioModal({
             )}
           </div>
 
-          {/* Mode Switcher Tabs */}
-          <div className="arch-mode-switcher">
+          {/* Mode Switcher */}
+          <div className="clean-mode-pill">
             <button
               type="button"
-              className={`mode-btn ${activeTab === 'visual' ? 'active' : ''}`}
+              className={`mode-pill-btn ${activeTab === 'visual' ? 'active' : ''}`}
               onClick={() => setActiveTab('visual')}
             >
-              <Palette size={14} /> Vẽ Trực Quan &amp; Sơ Đồ
+              <Palette size={13} /> Vẽ Trực Quan
             </button>
             <button
               type="button"
-              className={`mode-btn ${activeTab === 'code' ? 'active' : ''}`}
+              className={`mode-pill-btn ${activeTab === 'code' ? 'active' : ''}`}
               onClick={() => setActiveTab('code')}
             >
-              <Code2 size={14} /> Soạn Code
-            </button>
-            <button
-              type="button"
-              className={`mode-btn ${activeTab === 'preview' ? 'active' : ''}`}
-              onClick={() => setActiveTab('preview')}
-            >
-              <Eye size={14} /> Toàn Màn Hình
+              <Code2 size={13} /> Soạn Code
             </button>
           </div>
+        </div>
 
+        {/* Right: Flow Toggle, Clear, Copy, Save */}
+        <div className="clean-bar-right">
           <button
             type="button"
-            className="btn outline-light"
-            onClick={copyCode}
-            title="Sao chép toàn bộ mã Mermaid"
+            className={`btn-flow-clean ${animatedFlow ? 'active' : ''}`}
+            onClick={() => setAnimatedFlow(prev => !prev)}
+            title="Bật/Tắt hiệu ứng xung điện chạy trên đường mũi tên"
           >
-            <Copy size={14} /> {copied ? 'Đã chép!' : 'Sao chép'}
+            <Activity size={13} className={animatedFlow ? 'pulse-icon' : ''} />
+            <span>{animatedFlow ? 'Luồng Động: BẬT' : 'Luồng Động: TẮT'}</span>
           </button>
 
           <button
             type="button"
-            className="btn primary"
+            className="btn-icon-clean"
+            onClick={handleClearCanvas}
+            title="Làm mới sơ đồ"
+          >
+            <Trash2 size={14} />
+          </button>
+
+          <button
+            type="button"
+            className="btn-icon-clean"
+            onClick={copyCode}
+            title="Sao chép mã Mermaid"
+          >
+            <Copy size={14} />
+          </button>
+
+          <button
+            type="button"
+            className="btn-apply-main"
             onClick={handleInsert}
           >
-            <Check size={16} /> Chèn vào nội dung
-          </button>
-
-          <button
-            type="button"
-            className="arch-studio-close-btn"
-            onClick={onClose}
-          >
-            <X size={18} />
+            <Check size={15} />
+            <span>Chèn vào Dự Án</span>
           </button>
         </div>
       </div>
 
-      {/* Studio Meta Bar: Title, Description, Quick Tools */}
-      <div className="arch-studio-meta-bar">
-        <input
-          type="text"
-          className="arch-studio-title-field"
-          placeholder="Tiêu đề sơ đồ kiến trúc (vd: Luồng xử lý Kafka & Apache Flink)..."
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-        />
-        <input
-          type="text"
-          className="arch-studio-desc-field"
-          placeholder="Mô tả kỹ thuật tóm tắt..."
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-        />
-        <div className="arch-meta-quick-actions">
-          <button
-            type="button"
-            className="btn-quick-toggle"
-            onClick={handleToggleDirection}
-            title="Đổi hướng luồng: Dọc (Top-Down) hoặc Ngang (Left-Right)"
-          >
-            <ArrowDownUp size={13} />
-            <span>Hướng: {graph.direction === 'TD' ? 'Dọc (TD)' : 'Ngang (LR)'}</span>
-          </button>
-          <button
-            type="button"
-            className="btn-quick-clear"
-            onClick={handleClearCanvas}
-            title="Xóa làm mới toàn bộ để tự vẽ"
-          >
-            <Trash2 size={13} />
-            <span>Làm mới</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Work Area based on Active Tab */}
-      <div className="arch-studio-main-body">
+      {/* 2. Main Studio Workspace */}
+      <div className="arch-studio-main-body clean-body">
         {activeTab === 'visual' && (
-          <div className="visual-designer-layout">
-            {/* Left Palette: Architecture Component Blocks */}
-            <div className="visual-palette-sidebar">
-              <span className="palette-title">
-                <Layers3 size={14} /> Khối Thành Phần
+          <div className="visual-designer-layout clean-layout">
+            {/* Left Palette (220px) */}
+            <div className="visual-palette-sidebar clean-palette">
+              <span className="clean-side-heading">
+                <Layers3 size={13} /> Thêm Khối
               </span>
-              <p className="palette-sub">Bấm để thêm khối vào sơ đồ:</p>
 
-              <div className="palette-grid">
+              <div className="palette-grid clean-grid">
                 {COMPONENT_PALETTE.map(item => {
                   const IconCmp = item.icon
                   return (
                     <button
                       key={item.type}
                       type="button"
-                      className="palette-item-btn"
+                      className="palette-item-btn clean-item"
                       onClick={() => handleAddComponent(item)}
                     >
                       <div className="palette-icon-box" style={{ color: item.defaultColor }}>
-                        <IconCmp size={16} />
+                        <IconCmp size={15} />
                       </div>
                       <span className="palette-label">{item.label}</span>
-                      <Plus size={13} className="palette-add-plus" />
+                      <Plus size={12} className="palette-add-plus" />
                     </button>
                   )
                 })}
               </div>
 
               {/* Quick Component Selection List */}
-              <div className="palette-nodes-list-section">
-                <span className="palette-title">
-                  <Workflow size={14} /> Chọn Khối Để Nối / Sửa ({graph.nodes.length})
+              <div className="palette-nodes-list-section clean-nodes-list">
+                <span className="clean-side-heading">
+                  <Workflow size={13} /> Danh Sách Khối ({graph.nodes.length})
                 </span>
                 <div className="palette-nodes-scroll">
                   {graph.nodes.map(node => {
@@ -681,8 +628,8 @@ export function ArchitectureStudioModal({
                     return (
                       <div
                         key={node.id}
-                        className={`palette-node-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleSelectNode(node.id)}
+                        className={`palette-node-item clean-node-pill ${isSelected ? 'selected' : ''}`}
+                        onClick={() => setSelectedNodeId(node.id)}
                       >
                         <span className="node-item-icon">{getNodeIconSymbol(node.type)}</span>
                         <span className="node-item-label">{node.label}</span>
@@ -696,26 +643,12 @@ export function ArchitectureStudioModal({
               </div>
             </div>
 
-            {/* Center Canvas: Full Interactive Visual Architecture Diagram */}
-            <div className="visual-canvas-workspace">
-              <div className="canvas-header-strip">
-                <span>
-                  ⚡ Có <b>{graph.nodes.length}</b> khối &amp; <b>{graph.edges.length}</b> liên kết mũi tên.
-                </span>
-                <span className="selected-tag">
-                  {selectedNode ? (
-                    <>Đang chọn: <b>{selectedNode.label}</b> (Bấm đổi màu &amp; nối dây ở cột phải ➔)</>
-                  ) : (
-                    '🔍 Kéo chuột để di chuyển • Cuộn chuột để zoom'
-                  )}
-                </span>
-              </div>
-
+            {/* Center: 100% Large Clean Canvas */}
+            <div className="visual-canvas-workspace clean-canvas">
               <div className={`visual-live-diagram-fullscreen ${animatedFlow ? 'animated-flow' : ''}`}>
                 <ArchitectureViewer
                   diagramCode={rawCode}
                   title={title}
-                  description={description}
                   defaultHeight="100%"
                   allowFullscreen={false}
                   className="arch-studio-main-canvas"
@@ -723,32 +656,33 @@ export function ArchitectureStudioModal({
               </div>
             </div>
 
-            {/* Right Sidebar: Active Node / Edge Inspector & Dropdown Connect Form */}
-            <div className="visual-inspector-sidebar">
-              <span className="inspector-title">
-                <Palette size={14} /> Thuộc Tính Khối &amp; Nối Mũi Tên
+            {/* Right Inspector (260px) */}
+            <div className="visual-inspector-sidebar clean-inspector">
+              <span className="clean-side-heading">
+                <Palette size={13} /> Thuộc Tính &amp; Nối Dây
               </span>
 
               {selectedNode ? (
-                <div className="inspector-form selected-box">
-                  <div className="inspector-header-badge">
-                    <span className="node-badge-icon">{getNodeIconSymbol(selectedNode.type)}</span>
+                <div className="clean-inspector-card">
+                  {/* Selected Node Header */}
+                  <div className="clean-node-header-pill">
+                    <span>{getNodeIconSymbol(selectedNode.type)}</span>
                     <b>{selectedNode.label}</b>
                   </div>
 
-                  {/* 1. Edit Name & Type */}
-                  <label>
-                    <span>Tên hiển thị khối:</span>
+                  {/* 1. Name & Type */}
+                  <label className="clean-field-group">
+                    <span>Tên khối:</span>
                     <input
                       type="text"
                       value={selectedNode.label}
                       onChange={e => handleUpdateNodeLabel(e.target.value)}
-                      placeholder="Nhập tên khối..."
+                      placeholder="Nhập tên..."
                     />
                   </label>
 
-                  <label>
-                    <span>Loại thành phần:</span>
+                  <label className="clean-field-group">
+                    <span>Loại khối:</span>
                     <select
                       value={selectedNode.type}
                       onChange={e => handleUpdateNodeType(e.target.value)}
@@ -759,146 +693,117 @@ export function ArchitectureStudioModal({
                     </select>
                   </label>
 
-                  {/* 2. Custom Color Picker */}
-                  <div className="inspector-color-section">
-                    <span className="inspector-subhead">🎨 Màu Sắc Khối:</span>
-                    <div className="color-swatches-grid">
+                  {/* 2. Custom Color */}
+                  <div className="clean-color-wrap">
+                    <span>Màu khối:</span>
+                    <div className="clean-colors-row">
                       {COLOR_SWATCHES.map(s => (
                         <button
                           key={s.color}
                           type="button"
-                          className={`color-swatch-btn ${selectedNode.customColor === s.color ? 'active' : ''}`}
+                          className={`clean-swatch ${selectedNode.customColor === s.color ? 'active' : ''}`}
                           style={{ background: s.color }}
                           onClick={() => handleUpdateNodeColor(s.color)}
                           title={s.label}
                         />
                       ))}
-                      <label className="color-picker-custom-label" title="Chọn màu tùy biến">
+                      <label className="clean-custom-color-btn" title="Chọn màu tùy biến">
                         <input
                           type="color"
                           value={selectedNode.customColor || '#0284c7'}
                           onChange={e => handleUpdateNodeColor(e.target.value)}
                         />
-                        <span>Tự chọn</span>
                       </label>
+                      {selectedNode.customColor && (
+                        <button
+                          type="button"
+                          className="clean-reset-color-btn"
+                          onClick={() => handleUpdateNodeColor('')}
+                          title="Đặt lại màu mặc định"
+                        >
+                          <RotateCcw size={11} />
+                        </button>
+                      )}
                     </div>
-                    {selectedNode.customColor && (
-                      <button
-                        type="button"
-                        className="btn-reset-color"
-                        onClick={() => handleUpdateNodeColor('')}
-                      >
-                        <RotateCcw size={11} /> Đặt lại màu mặc định
-                      </button>
-                    )}
                   </div>
 
-                  {/* 3. Outgoing Connections List & Dropdown Form */}
-                  <div className="inspector-connections-section">
-                    <span className="inspector-subhead">
-                      <Link2 size={13} /> Các Mũi Tên Đang Nối Từ Khối Này ({outgoingEdges.length}):
+                  {/* 3. Outgoing Connections */}
+                  <div className="clean-connections-section">
+                    <span className="clean-subhead">
+                      <Link2 size={12} /> Nối Mũi Tên ({outgoingEdges.length}):
                     </span>
 
-                    {outgoingEdges.length > 0 ? (
-                      <div className="outgoing-edges-list">
+                    {/* Existing Outgoing list */}
+                    {outgoingEdges.length > 0 && (
+                      <div className="clean-edge-tags-list">
                         {outgoingEdges.map(edge => {
                           const targetNode = graph.nodes.find(n => n.id === edge.to)
                           return (
-                            <div key={edge.id} className="outgoing-edge-card">
-                              <div className="edge-card-info">
-                                <span className="edge-arrow-symbol">➔</span>
-                                <b className="edge-target-name">{targetNode?.label || edge.to}</b>
+                            <div key={edge.id} className="clean-edge-tag">
+                              <div className="clean-edge-text">
+                                <span className="arrow">➔</span>
+                                <b>{targetNode?.label || edge.to}</b>
+                                <small>({edge.label || 'Data Flow'})</small>
                               </div>
-                              <div className="edge-label-edit-row">
-                                <input
-                                  type="text"
-                                  className="edge-label-input"
-                                  value={edge.label || ''}
-                                  onChange={e => handleUpdateEdgeLabel(edge.id, e.target.value)}
-                                  placeholder="Nhãn luồng (vd: HTTP / REST)..."
-                                />
-                                <button
-                                  type="button"
-                                  className="edge-del-btn"
-                                  onClick={() => handleDeleteEdge(edge.id)}
-                                  title="Xóa liên kết này"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
+                              <button
+                                type="button"
+                                className="clean-edge-del"
+                                onClick={() => handleDeleteEdge(edge.id)}
+                                title="Xóa đường nối này"
+                              >
+                                <X size={11} />
+                              </button>
                             </div>
                           )
                         })}
                       </div>
-                    ) : (
-                      <p className="empty-connections-hint">Chưa có mũi tên nào nối từ khối này.</p>
                     )}
 
-                    {/* Add New Connection Form */}
-                    <div className="add-connection-box">
-                      <span className="add-conn-title">➕ Thêm Mũi Tên Mới Từ Khối Này:</span>
+                    {/* Add connection form */}
+                    <div className="clean-add-edge-form">
+                      <select
+                        value={newTargetNodeId}
+                        onChange={e => setNewTargetNodeId(e.target.value)}
+                      >
+                        <option value="">-- Nối tới khối... --</option>
+                        {otherNodes.map(target => (
+                          <option key={target.id} value={target.id}>
+                            {getNodeIconSymbol(target.type)} {target.label}
+                          </option>
+                        ))}
+                      </select>
 
-                      <label>
-                        <span>Nối tới khối đích (To Node):</span>
-                        <select
-                          value={newTargetNodeId}
-                          onChange={e => setNewTargetNodeId(e.target.value)}
-                        >
-                          <option value="">-- Chọn khối muốn nối tới --</option>
-                          {otherNodes.map(target => (
-                            <option key={target.id} value={target.id}>
-                              {getNodeIconSymbol(target.type)} {target.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label>
-                        <span>Mô tả luồng dữ liệu (Label):</span>
-                        <input
-                          type="text"
-                          value={newEdgeLabel}
-                          onChange={e => setNewEdgeLabel(e.target.value)}
-                          placeholder="vd: HTTP / REST, SQL Query, Event..."
-                        />
-                      </label>
-
-                      <label>
-                        <span>Kiểu đường mũi tên:</span>
-                        <select
-                          value={newEdgeStyle}
-                          onChange={e => setNewEdgeStyle(e.target.value)}
-                        >
-                          <option value="solid">Mũi tên liền (Solid ---&gt;)</option>
-                          <option value="dotted">Mũi tên nét đứt (Dotted -.-&gt;)</option>
-                          <option value="bidirectional">Hai chiều (&lt;---&gt;)</option>
-                        </select>
-                      </label>
+                      <input
+                        type="text"
+                        value={newEdgeLabel}
+                        onChange={e => setNewEdgeLabel(e.target.value)}
+                        placeholder="Nhãn (vd: HTTP/REST, SQL...)"
+                      />
 
                       <button
                         type="button"
-                        className="btn-add-edge-action"
+                        className="clean-btn-add-conn"
                         onClick={handleAddEdgeFromSelectedNode}
                         disabled={!newTargetNodeId}
                       >
-                        <Plus size={14} /> Nối Mũi Tên Ngay
+                        <Plus size={13} /> Nối Dây
                       </button>
                     </div>
                   </div>
 
-                  {/* 4. Delete Node Button */}
+                  {/* 4. Delete Node */}
                   <button
                     type="button"
-                    className="btn-danger-del"
+                    className="clean-btn-del-node"
                     onClick={() => handleDeleteNode(selectedNode.id)}
                   >
-                    <Trash2 size={14} /> Xóa khối này khỏi sơ đồ
+                    <Trash2 size={12} /> Xóa khối này
                   </button>
                 </div>
               ) : (
-                <div className="inspector-placeholder">
-                  <Workflow size={36} style={{ color: '#0284c7', margin: '0 auto 10px', opacity: 0.7 }} />
-                  <p>Hãy chọn một khối ở cột bên trái hoặc trên sơ đồ để đổi màu và nối mũi tên!</p>
+                <div className="inspector-placeholder clean-placeholder">
+                  <Workflow size={28} style={{ color: '#0284c7', margin: '0 auto 8px', opacity: 0.6 }} />
+                  <p>Bấm chọn 1 khối ở cột trái để đổi tên, đổi màu và nối mũi tên!</p>
                 </div>
               )}
             </div>
@@ -906,10 +811,10 @@ export function ArchitectureStudioModal({
         )}
 
         {activeTab === 'code' && (
-          <div className="code-editor-tab-layout">
+          <div className="code-editor-tab-layout clean-code-layout">
             <div className="code-editor-left">
               <div className="code-editor-toolbar">
-                <span>Mã Mermaid DSL (Có thể chỉnh sửa thủ công):</span>
+                <span>Mã Mermaid DSL:</span>
                 <button type="button" className="btn outline-light" onClick={copyCode}>
                   <Copy size={13} /> {copied ? 'Đã sao chép' : 'Sao chép'}
                 </button>
@@ -928,23 +833,10 @@ export function ArchitectureStudioModal({
               <ArchitectureViewer
                 diagramCode={rawCode}
                 title={title}
-                description={description}
                 defaultHeight="100%"
                 allowFullscreen={false}
               />
             </div>
-          </div>
-        )}
-
-        {activeTab === 'preview' && (
-          <div className="full-preview-tab-layout">
-            <ArchitectureViewer
-              diagramCode={rawCode}
-              title={title}
-              description={description}
-              defaultHeight="100%"
-              allowFullscreen={true}
-            />
           </div>
         )}
       </div>
