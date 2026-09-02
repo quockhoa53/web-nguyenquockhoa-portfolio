@@ -194,7 +194,7 @@ export function ProjectsPage() {
                       </div>
 
                       <p className="project-card-desc">
-                        {p.description?.replace(/<[^>]*>?/gm, '').slice(0, 140)}…
+                        {p.summary || (p.description?.replace(/<[^>]*>?/gm, '').slice(0, 140) + '…')}
                       </p>
 
                       {techs.length > 0 && (

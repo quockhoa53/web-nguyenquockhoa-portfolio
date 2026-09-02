@@ -55,7 +55,7 @@ export function HomePage() {
                     <div className="card-body">
                       <small>{p.technologies}</small>
                       <h3>{p.title}</h3>
-                      <p>{p.description?.replace(/<[^>]*>?/gm, '')}</p>
+                      <p>{p.summary || (p.description?.replace(/<[^>]*>?/gm, '').slice(0, 140) + '…')}</p>
                       <Link to={`/projects/${p.id}`}>Xem chi tiết <ArrowRight /></Link>
                     </div>
                   </TiltCard>

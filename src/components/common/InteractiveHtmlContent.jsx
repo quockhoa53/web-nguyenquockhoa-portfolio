@@ -20,42 +20,62 @@ export function InteractiveHtmlContent({ html = '', className = '' }) {
     })
     rootsRef.current = []
 
-    // Find all mermaid pre blocks
-    const mermaidNodes = el.querySelectorAll('pre.mermaid, code.language-mermaid')
-    mermaidNodes.forEach((node, idx) => {
-      const diagramCode = node.textContent.trim()
-      if (!diagramCode) return
+    // Find all mermaid and pre/code blocks
+    const nodes = el.querySelectorAll('pre, code, div.architecture-diagram-container')
+    const seen = new Set()
+    let idxCounter = 0
 
-      // Check parent container for custom metadata
-      const parentContainer = node.closest('.architecture-diagram-container')
-      const title =
-        parentContainer?.getAttribute('data-title') ||
-        node.getAttribute('data-title') ||
-        'Sơ đồ Kiến trúc Hệ thống'
-      const description =
-        parentContainer?.getAttribute('data-desc') ||
-        node.getAttribute('data-desc') ||
-        ''
+    nodes.forEach(node => {
+      if (seen.has(node) || node.closest('.arch-dynamic-mount-slot')) return
 
-      // Target element to replace or append into
-      const mountTarget = parentContainer || node
-      const mountDiv = document.createElement('div')
-      mountDiv.className = 'arch-dynamic-mount-slot'
+      const text = node.textContent.trim()
+      if (!text) return
 
-      // Replace mountTarget in DOM with mountDiv
-      mountTarget.parentNode.insertBefore(mountDiv, mountTarget)
-      mountTarget.style.display = 'none'
+      const isExplicitMermaid =
+        node.classList.contains('mermaid') ||
+        node.classList.contains('language-mermaid') ||
+        node.classList.contains('architecture-diagram-container')
 
-      const root = createRoot(mountDiv)
-      root.render(
-        <ArchitectureViewer
-          key={`arch-diag-${idx}`}
-          diagramCode={diagramCode}
-          title={title}
-          description={description}
-        />
-      )
-      rootsRef.current.push(root)
+      // Auto-detect Mermaid flowchart/graph/diagram syntax
+      const isAutoMermaid = /^(graph\s+(TD|TB|BT|RL|LR)|flowchart\s+(TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap|quadrantChart|journey|gitGraph|architecture-beta)/m.test(text)
+
+      if (isExplicitMermaid || isAutoMermaid) {
+        seen.add(node)
+        const parentContainer = node.closest('.architecture-diagram-container')
+        const title =
+          parentContainer?.getAttribute('data-title') ||
+          node.getAttribute('data-title') ||
+          'Sơ đồ Kiến trúc Hệ thống'
+        const description =
+          parentContainer?.getAttribute('data-desc') ||
+          node.getAttribute('data-desc') ||
+          ''
+
+        // Target element to replace
+        const mountTarget =
+          parentContainer ||
+          (node.tagName === 'CODE' && node.parentElement?.tagName === 'PRE' ? node.parentElement : node)
+
+        seen.add(mountTarget)
+
+        const mountDiv = document.createElement('div')
+        mountDiv.className = 'arch-dynamic-mount-slot'
+
+        mountTarget.parentNode.insertBefore(mountDiv, mountTarget)
+        mountTarget.style.display = 'none'
+
+        idxCounter++
+        const root = createRoot(mountDiv)
+        root.render(
+          <ArchitectureViewer
+            key={`arch-diag-${idxCounter}-${Date.now()}`}
+            diagramCode={text}
+            title={title}
+            description={description}
+          />
+        )
+        rootsRef.current.push(root)
+      }
     })
 
     return () => {

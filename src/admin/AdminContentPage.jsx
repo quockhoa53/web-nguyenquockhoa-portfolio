@@ -143,6 +143,7 @@ const configs = {
     resource: 'projects',
     fields: [
       ['title', 'Tên dự án'],
+      ['summary', 'Mô tả ngắn dự án (hiển thị trên thẻ card & đầu trang chi tiết)', 'textarea'],
       ['technologies', 'Công nghệ sử dụng (vd: Spring Boot, PostgreSQL, Docker)'],
       ['imageUrl', 'Ảnh bìa dự án', 'image_upload', 'portfolio/projects'],
       ['demoUrl', 'Link Demo / Live Web (URL)'],
