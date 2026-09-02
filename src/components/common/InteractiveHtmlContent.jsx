@@ -73,6 +73,36 @@ function cleanMermaidCode(text) {
   return clean
 }
 
+function highlightJson(jsonStr) {
+  if (!jsonStr) return ''
+  let json = jsonStr
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  return json.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+    (match) => {
+      let cls = 'json-number'
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) {
+          cls = 'json-key'
+        } else {
+          cls = 'json-string'
+        }
+      } else if (/true|false/.test(match)) {
+        cls = 'json-boolean'
+      } else if (/null/.test(match)) {
+        cls = 'json-null'
+      }
+      return `<span class="${cls}">${match}</span>`
+    }
+  )
+}
+
 export function InteractiveHtmlContent({ html = '', className = '' }) {
   const containerRef = useRef(null)
   const rootsRef = useRef([])
@@ -177,6 +207,31 @@ export function InteractiveHtmlContent({ html = '', className = '' }) {
           />
         )
         rootsRef.current.push(root)
+      }
+    })
+
+    // 3. Third pass: Format & Syntax-Highlight JSON blocks
+    const preNodes = el.querySelectorAll('pre')
+    preNodes.forEach(pre => {
+      if (seen.has(pre) || pre.classList.contains('mermaid') || pre.closest('.arch-dynamic-mount-slot')) return
+
+      const text = pre.textContent.trim()
+      const isJsonExplicit = pre.classList.contains('language-json') || pre.getAttribute('data-lang') === 'json'
+      const isJsonCandidate = (text.startsWith('{') && text.endsWith('}')) || (text.startsWith('[') && text.endsWith(']'))
+
+      if (isJsonExplicit || isJsonCandidate) {
+        try {
+          const parsed = JSON.parse(text)
+          const formatted = JSON.stringify(parsed, null, 2)
+          const highlighted = highlightJson(formatted)
+
+          pre.classList.add('language-json', 'formatted-json-block')
+          pre.setAttribute('data-lang', 'json')
+          pre.innerHTML = `<code class="language-json">${highlighted}</code>`
+          seen.add(pre)
+        } catch {
+          // Not valid JSON, keep original
+        }
       }
     })
 

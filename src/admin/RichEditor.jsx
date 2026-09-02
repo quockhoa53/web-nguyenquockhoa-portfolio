@@ -14,7 +14,7 @@ const editorContentStyle = `
   
   /* Multiline Unified Code Block */
   pre:not(.mermaid) {
-    padding: 12px 16px;
+    padding: 14px 18px;
     overflow-x: auto;
     border-radius: 8px;
     background: #f8fafc;
@@ -28,6 +28,7 @@ const editorContentStyle = `
     text-indent: 0 !important;
     white-space: pre-wrap !important;
     word-break: break-word;
+    position: relative;
   }
   pre:not(.mermaid) code {
     background: transparent !important;
@@ -40,6 +41,17 @@ const editorContentStyle = `
     display: block;
     font-family: inherit;
   }
+
+  /* JSON Syntax Highlighting Styles */
+  pre.language-json, pre[data-lang="json"] {
+    background: #f8fafc;
+    border-color: #38bdf8;
+  }
+  .json-key { color: #0284c7; font-weight: 600; }
+  .json-string { color: #059669; }
+  .json-number { color: #d97706; }
+  .json-boolean { color: #7c3aed; font-weight: 600; }
+  .json-null { color: #64748b; font-style: italic; }
 
   /* Inline Code Tag */
   code:not(pre code) {
@@ -154,7 +166,7 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
           resize: 'both',
           menubar: 'file edit view insert format tools table help',
           plugins: 'advlist anchor autolink charmap code codesample emoticons fullscreen image link lists media preview searchreplace table visualblocks wordcount',
-          toolbar: 'undo redo | blocks fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | codeblock archstudio | link image table | removeformat code preview fullscreen',
+          toolbar: 'undo redo | blocks fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | codeblock jsonblock archstudio | link image table | removeformat code preview fullscreen',
           toolbar_mode: 'wrap',
           contextmenu: 'link image table',
           image_advtab: true,
@@ -195,7 +207,60 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
               },
             })
 
-            // 2. Custom Architecture Studio button
+            // 2. Custom JSON Block insertion & Beautifier button
+            editor.ui.registry.addButton('jsonblock', {
+              text: '{ } JSON',
+              tooltip: 'Chèn hoặc tự động định dạng JSON chuẩn chỉ',
+              onAction: () => {
+                const selectedText = editor.selection.getContent({ format: 'text' })
+                let jsonFormatted = ''
+                if (selectedText && selectedText.trim()) {
+                  try {
+                    const parsed = JSON.parse(selectedText.trim())
+                    jsonFormatted = JSON.stringify(parsed, null, 2)
+                  } catch {
+                    jsonFormatted = selectedText.trim()
+                  }
+                } else {
+                  jsonFormatted = JSON.stringify(
+                    {
+                      id: 100,
+                      name: 'Nguyen Van A',
+                      role: 'Backend & AI Engineer',
+                      status: 'ACTIVE',
+                      skills: ['Java', 'Spring Boot', 'Kafka', 'PostgreSQL']
+                    },
+                    null,
+                    2
+                  )
+                }
+                const escaped = jsonFormatted
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+
+                editor.insertContent(`<pre class="language-json" data-lang="json"><code class="language-json">${escaped}</code></pre><p>&nbsp;</p>`)
+              },
+            })
+            editor.ui.registry.addMenuItem('jsonblock_menu', {
+              text: '{ } Khối Dữ Liệu JSON Chuẩn',
+              icon: 'code-sample',
+              onAction: () => {
+                const jsonFormatted = JSON.stringify(
+                  {
+                    id: 100,
+                    name: 'Nguyen Van A',
+                    role: 'Backend & AI Engineer',
+                    status: 'ACTIVE'
+                  },
+                  null,
+                  2
+                )
+                editor.insertContent(`<pre class="language-json" data-lang="json"><code class="language-json">${jsonFormatted}</code></pre><p>&nbsp;</p>`)
+              }
+            })
+
+            // 3. Custom Architecture Studio button
             editor.ui.registry.addButton('archstudio', {
               text: '🏛️ Chèn Sơ Đồ',
               tooltip: 'Mở Architecture Studio để vẽ và chèn sơ đồ kiến trúc ngay tại vị trí con trỏ',
