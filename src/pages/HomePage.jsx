@@ -193,9 +193,18 @@ function Hero({ profile, projectCount = 0 }) {
           </div>
 
           <div className="hero-stats">
-            <div><b>{projectCount}+</b><span>Dự án</span></div>
-            <div><b>4+</b><span>Mảng thực chiến</span></div>
-            <div><b>10+</b><span>Công nghệ</span></div>
+            <div>
+              <AnimatedCounter end={projectCount || 5} duration={1600} />
+              <span>Dự án</span>
+            </div>
+            <div>
+              <AnimatedCounter end={4} duration={1600} />
+              <span>Mảng thực chiến</span>
+            </div>
+            <div>
+              <AnimatedCounter end={10} duration={1600} />
+              <span>Công nghệ</span>
+            </div>
           </div>
         </div>
 
@@ -239,4 +248,38 @@ function plainText(html = '') {
   const element = document.createElement('div')
   element.innerHTML = html
   return element.textContent || ''
+}
+
+function AnimatedCounter({ end, duration = 1600, suffix = '+' }) {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    let startTimestamp = null
+    const target = Number(end) || 0
+    if (target <= 0) {
+      setCount(0)
+      return
+    }
+
+    let animationFrameId
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp
+      const elapsed = timestamp - startTimestamp
+      const progress = Math.min(elapsed / duration, 1)
+      // Smooth ease-out cubic curve
+      const easeOut = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.floor(easeOut * target))
+
+      if (progress < 1) {
+        animationFrameId = window.requestAnimationFrame(step)
+      } else {
+        setCount(target)
+      }
+    }
+
+    animationFrameId = window.requestAnimationFrame(step)
+    return () => window.cancelAnimationFrame(animationFrameId)
+  }, [end, duration])
+
+  return <b>{count}{suffix}</b>
 }

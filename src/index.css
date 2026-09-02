@@ -458,6 +458,9 @@ button {
   color: var(--text);
   font-weight: 800;
   font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+  min-width: 48px;
 }
 
 .hero-stats span {
