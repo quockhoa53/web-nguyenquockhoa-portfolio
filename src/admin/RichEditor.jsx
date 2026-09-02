@@ -40,7 +40,21 @@ async function uploadEditorImage(blobInfo) {
 
 export function RichEditor({ value, onChange, minHeight = 620 }) {
   const editorRef = useRef(null)
+  const savedBookmarkRef = useRef(null)
   const [studioOpen, setStudioOpen] = useState(false)
+
+  function openStudio() {
+    if (editorRef.current) {
+      editorRef.current.focus()
+      try {
+        // Save exact cursor position bookmark before opening modal
+        savedBookmarkRef.current = editorRef.current.selection.getBookmark(2, true)
+      } catch {
+        savedBookmarkRef.current = null
+      }
+    }
+    setStudioOpen(true)
+  }
 
   function handleInsertDiagram({ title, description, code }) {
     const escapedCode = (code || '')
@@ -49,19 +63,30 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
       .replace(/>/g, '&gt;')
 
     const htmlToInsert = `
-      <div class="architecture-diagram-container" data-title="${title || 'Sơ đồ Kiến trúc'}" data-desc="${description || ''}">
-        <h4 style="color:#0284c7; margin: 18px 0 8px; font-weight: 800;">🏛️ ${title || 'Sơ đồ Kiến trúc Hệ thống'}</h4>
-        ${description ? `<p style="color:#64748b; font-size:14px; margin-bottom:12px;">${description}</p>` : ''}
-        <pre class="mermaid">${escapedCode}</pre>
-      </div>
-      <p>&nbsp;</p>
-    `
+<div class="architecture-diagram-container" data-title="${title || 'Sơ đồ Kiến trúc'}" data-desc="${description || ''}">
+  <h4 style="color:#0284c7; margin: 18px 0 8px; font-weight: 800;">🏛️ ${title || 'Sơ đồ Kiến trúc Hệ thống'}</h4>
+  ${description ? `<p style="color:#64748b; font-size:14px; margin-bottom:12px;">${description}</p>` : ''}
+  <pre class="mermaid">${escapedCode}</pre>
+</div>
+<p>&nbsp;</p>
+`
 
     if (editorRef.current) {
+      editorRef.current.focus()
+      // Restore cursor position bookmark so insertion happens precisely where cursor was placed!
+      if (savedBookmarkRef.current) {
+        try {
+          editorRef.current.selection.moveToBookmark(savedBookmarkRef.current)
+        } catch {
+          // ignore bookmark error
+        }
+      }
       editorRef.current.insertContent(htmlToInsert)
+      savedBookmarkRef.current = null
     } else {
       onChange((value || '') + '\n' + htmlToInsert)
     }
+    setStudioOpen(false)
   }
 
   return (
@@ -71,10 +96,11 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
         <button
           type="button"
           className="btn-open-arch-studio"
-          onClick={() => setStudioOpen(true)}
+          onClick={openStudio}
+          title="Mở trình thiết kế sơ đồ và chèn chính xác tại vị trí con trỏ chuột"
         >
           <Workflow size={15} />
-          <span>🏛️ Mở Architecture Studio IDE (Vẽ Sơ đồ Kiến trúc)</span>
+          <span>🏛️ Mở Architecture Studio IDE (Chèn Sơ Đồ Tại Con Trỏ)</span>
         </button>
       </div>
 
@@ -107,12 +133,12 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
             editor.ui.registry.addButton('archstudio', {
               text: '🏛️ Chèn Sơ Đồ',
               tooltip: 'Mở Architecture Studio để vẽ và chèn sơ đồ kiến trúc ngay tại vị trí con trỏ',
-              onAction: () => setStudioOpen(true),
+              onAction: openStudio,
             })
             editor.ui.registry.addMenuItem('archstudio_menu', {
               text: '🏛️ Sơ Đồ Kiến Trúc Hệ Thống (Mermaid)',
               icon: 'code-sample',
-              onAction: () => setStudioOpen(true),
+              onAction: openStudio,
             })
           }
         }}

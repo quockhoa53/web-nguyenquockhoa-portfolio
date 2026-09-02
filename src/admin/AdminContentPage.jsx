@@ -37,7 +37,6 @@ import {
   Star
 } from 'lucide-react'
 import { useToast } from '../components/common/ToastContext'
-import { ArchitectureStudioModal } from './components/ArchitectureStudioModal'
 import {
   createAdminItem,
   deleteAdminItem,
@@ -232,7 +231,6 @@ export function AdminContentPage() {
   const [testingMail, setTestingMail] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [studioOpen, setStudioOpen] = useState(false)
   const toast = useToast()
 
   const DEFAULT_AI_INSIGHTS = useMemo(() => ({
@@ -1021,24 +1019,6 @@ export function AdminContentPage() {
               Hủy bỏ
             </button>
 
-            {/* Architecture Studio IDE Button in Editor Top Bar */}
-            {['projects', 'articles', 'work-items'].includes(section) && (
-              <button
-                type="button"
-                className="admin-btn-secondary"
-                onClick={() => setStudioOpen(true)}
-                style={{
-                  background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(99, 102, 241, 0.12))',
-                  borderColor: 'rgba(99, 102, 241, 0.3)',
-                  color: '#4f46e5'
-                }}
-                title="Mở trình vẽ sơ đồ kiến trúc hệ thống (Mermaid IDE)"
-              >
-                <Workflow size={15} />
-                <span>Architecture Studio</span>
-              </button>
-            )}
-
             <button
               type="button"
               className="admin-btn-primary"
@@ -1107,16 +1087,6 @@ export function AdminContentPage() {
                       <Sparkles size={16} />
                       <span>{label}</span>
                     </label>
-
-                    {['projects', 'articles', 'work-items'].includes(section) && (
-                      <button
-                        type="button"
-                        className="btn-quick-insert-arch"
-                        onClick={() => setStudioOpen(true)}
-                      >
-                        <Workflow size={14} /> Chèn Sơ Đồ Kiến Trúc
-                      </button>
-                    )}
                   </div>
 
                   <div className="rich-editor-fullpage-wrap">
@@ -1233,22 +1203,6 @@ export function AdminContentPage() {
             </div>
           </div>
         </form>
-
-        {/* Architecture Studio Fullscreen IDE Modal */}
-        <ArchitectureStudioModal
-          isOpen={studioOpen}
-          onClose={() => setStudioOpen(false)}
-          initialTitle={editing.title || 'Sơ đồ Kiến trúc Hệ thống'}
-          onInsert={({ title: archTitle, code }) => {
-            const block = `\n<pre class="mermaid">\n${code}\n</pre>\n`
-            if (section === 'articles') {
-              setEditing(prev => ({ ...prev, content: (prev.content || '') + block }))
-            } else if (section === 'projects' || section === 'work-items') {
-              setEditing(prev => ({ ...prev, description: (prev.description || '') + block, content: (prev.content || '') + block }))
-            }
-            toast.success(`Đã chèn sơ đồ "${archTitle}" vào nội dung!`)
-          }}
-        />
       </div>
     )
   }
