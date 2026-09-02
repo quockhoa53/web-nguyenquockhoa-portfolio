@@ -23,7 +23,17 @@ import {
   ThumbsDown,
   MessageSquare,
   TrendingUp,
-  Workflow
+  Workflow,
+  ArrowLeft,
+  Calendar,
+  Link2,
+  FileText,
+  Image as ImageIcon,
+  Sliders,
+  Save,
+  CheckCircle2,
+  Clock,
+  Globe
 } from 'lucide-react'
 import { useToast } from '../components/common/ToastContext'
 import { ArchitectureStudioModal } from './components/ArchitectureStudioModal'
@@ -55,6 +65,7 @@ import { RichEditor } from './RichEditor'
 import { AdminPagination } from './components/AdminPagination'
 import { AdminImageUpload } from './components/AdminImageUpload'
 import { AdminStatusBadge } from './components/AdminStatusBadge'
+import { InteractiveHtmlContent } from '../components/common/InteractiveHtmlContent'
 
 const SKILL_CATEGORIES = [
   'Backend & Architecture',
@@ -318,6 +329,10 @@ export function AdminContentPage() {
       const data = await config.load()
       if (config.single) {
         setItems(data ? [data] : [])
+        // Automatically open profile in full page editor
+        if (section === 'profile' && data) {
+          setEditing(data)
+        }
       } else {
         setItems(Array.isArray(data) ? data : [])
       }
@@ -339,6 +354,8 @@ export function AdminContentPage() {
     setSearch('')
     setCurrentPage(1)
     setSortBy('DEFAULT')
+    setEditing(null)
+    setViewingItem(null)
   }, [section])
 
   // Filter and Sort Data
@@ -416,7 +433,9 @@ export function AdminContentPage() {
   }
 
   async function save(e) {
-    e.preventDefault()
+    if (e && e.preventDefault) e.preventDefault()
+    if (!editing) return
+
     setIsSaving(true)
     try {
       if (config.single) {
@@ -428,13 +447,14 @@ export function AdminContentPage() {
         // Instant optimistic local update
         setItems(prev => prev.map(i => i.id === editing.id ? { ...i, ...editing, ...(updated || {}) } : i))
         toast.success(`Cập nhật ${config.title} thành công!`)
+        setEditing(null)
       } else {
         const created = await createAdminItem(config.resource, editing)
         // Instant optimistic insert
         setItems(prev => [created || { ...editing, id: Date.now() }, ...prev])
         toast.success(`Thêm mới ${config.title} thành công!`)
+        setEditing(null)
       }
-      setEditing(null)
       // Background sync
       load()
     } catch (err) {
@@ -448,51 +468,498 @@ export function AdminContentPage() {
     if (!confirm('Bạn chắc chắn muốn xóa bản ghi này? Thao tác này không thể hoàn tác.')) return
     try {
       await deleteAdminItem(config.resource, id)
-      // Instant optimistic removal
-      setItems(prev => prev.filter(i => i.id !== id))
-      toast.success(`Đã xóa ${config.title} thành công!`)
-      load()
+      setItems(items.filter(i => i.id !== id))
+      toast.success('Xóa bản ghi thành công!')
     } catch (err) {
-      toast.error('Xóa dữ liệu thất bại: ' + (err.message || 'Có lỗi xảy ra'))
+      toast.error('Xóa thất bại: ' + (err.message || 'Có lỗi xảy ra'))
     }
   }
 
-  async function moderate(item, status) {
+  async function moderate(comment, status) {
     try {
-      await moderateComment(item.type, item.id, status)
-      setItems(prev => prev.map(i => i.id === item.id ? { ...i, status } : i))
-      toast.success(status === 'APPROVED' ? 'Đã phê duyệt bình luận!' : 'Đã từ chối bình luận!')
-      load()
+      await moderateComment(comment.id, status)
+      setItems(items.map(i => (i.id === comment.id ? { ...i, status } : i)))
+      toast.success(`Đã cập nhật trạng thái bình luận: ${status}!`)
     } catch (err) {
-      toast.error('Xử lý bình luận thất bại: ' + (err.message || 'Có lỗi xảy ra'))
+      toast.error('Cập nhật trạng thái thất bại: ' + (err.message || 'Có lỗi xảy ra'))
     }
   }
 
-  return (
-    <div className="admin-page">
-      {/* Heading Bar */}
-      <div className="admin-heading">
-        <div className="admin-heading-left">
-          <span className="admin-badge-category">
-            <Layers size={11} /> QUẢN TRỊ DỮ LIỆU
-          </span>
-          <h1>{config.title}</h1>
+  // ================= 1. FULL-PAGE DETAIL VIEW =================
+  if (viewingItem) {
+    return (
+      <div className="admin-fullpage-detail-layout">
+        {/* Header Bar */}
+        <div className="admin-fullpage-header">
+          <div className="fullpage-header-left">
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={() => setViewingItem(null)}
+            >
+              <ArrowLeft size={16} />
+              <span>Quay lại danh sách</span>
+            </button>
+
+            <div className="fullpage-title-wrap">
+              <span className="fullpage-eyebrow">CHI TIẾT BẢN GHI • {config.title.toUpperCase()}</span>
+              <h2>{viewingItem.title || viewingItem.name || viewingItem.company || config.title} {viewingItem.id && `#${viewingItem.id}`}</h2>
+            </div>
+          </div>
+
+          <div className="fullpage-header-right">
+            {!config.readonly && (
+              <button
+                type="button"
+                className="admin-btn-primary"
+                onClick={() => {
+                  setEditing({ ...viewingItem })
+                  setViewingItem(null)
+                }}
+              >
+                <Edit3 size={15} />
+                <span>Chỉnh sửa bản ghi</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="admin-heading-actions">
+        {/* Detail Content Body */}
+        <div className="admin-fullpage-body">
+          <div className="admin-detail-grid-modern">
+            {/* Left Main Content */}
+            <div className="admin-detail-main">
+              {/* Cover Preview */}
+              {(viewingItem.thumbnailUrl || viewingItem.coverUrl || viewingItem.imageUrl || viewingItem.avatarUrl) && (
+                <div className="admin-detail-cover-card">
+                  <img
+                    src={viewingItem.thumbnailUrl || viewingItem.coverUrl || viewingItem.imageUrl || viewingItem.avatarUrl}
+                    alt="Cover"
+                  />
+                </div>
+              )}
+
+              {/* Summary */}
+              {viewingItem.summary && (
+                <div className="admin-editor-card">
+                  <h4 className="detail-card-heading">
+                    <FileText size={15} /> Tóm tắt ngắn gọn
+                  </h4>
+                  <p className="detail-summary-text">{viewingItem.summary}</p>
+                </div>
+              )}
+
+              {/* Rich Body Content */}
+              {(viewingItem.content || viewingItem.description || viewingItem.bio) && (
+                <div className="admin-editor-card">
+                  <h4 className="detail-card-heading">
+                    <Sparkles size={15} /> Nội dung chi tiết
+                  </h4>
+                  <div className="detail-rich-preview">
+                    <InteractiveHtmlContent
+                      html={viewingItem.content || viewingItem.description || viewingItem.bio}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Meta Sidebar */}
+            <div className="admin-detail-sidebar">
+              <div className="admin-editor-card">
+                <h4 className="detail-card-heading">
+                  <Sliders size={15} /> Thông số kỹ thuật
+                </h4>
+
+                <div className="detail-spec-list">
+                  {viewingItem.id && (
+                    <div className="detail-spec-row">
+                      <span>Mã định danh (ID)</span>
+                      <b>#{viewingItem.id}</b>
+                    </div>
+                  )}
+
+                  <div className="detail-spec-row">
+                    <span>Trạng thái</span>
+                    <AdminStatusBadge status={viewingItem.status || (viewingItem.published === false ? 'DRAFT' : 'ACTIVE')} />
+                  </div>
+
+                  {(viewingItem.category || viewingItem.categoryId) && (
+                    <div className="detail-spec-row">
+                      <span>Chuyên mục</span>
+                      <b>{categoriesList.find(c => c.id === viewingItem.categoryId)?.name || viewingItem.category || '—'}</b>
+                    </div>
+                  )}
+
+                  {viewingItem.technologies && (
+                    <div className="detail-spec-row">
+                      <span>Công nghệ</span>
+                      <b style={{ color: 'var(--adm-primary)' }}>{viewingItem.technologies}</b>
+                    </div>
+                  )}
+
+                  {viewingItem.proficiency !== undefined && (
+                    <div className="detail-spec-row">
+                      <span>Độ thông thạo</span>
+                      <b>{viewingItem.proficiency}%</b>
+                    </div>
+                  )}
+
+                  {viewingItem.displayOrder !== undefined && (
+                    <div className="detail-spec-row">
+                      <span>Thứ tự hiển thị</span>
+                      <b>{viewingItem.displayOrder}</b>
+                    </div>
+                  )}
+
+                  {viewingItem.createdAt && (
+                    <div className="detail-spec-row">
+                      <span>Ngày tạo</span>
+                      <small>{new Date(viewingItem.createdAt).toLocaleString('vi-VN')}</small>
+                    </div>
+                  )}
+
+                  {viewingItem.updatedAt && (
+                    <div className="detail-spec-row">
+                      <span>Cập nhật cuối</span>
+                      <small>{new Date(viewingItem.updatedAt).toLocaleString('vi-VN')}</small>
+                    </div>
+                  )}
+                </div>
+
+                {/* External Links */}
+                {(viewingItem.demoUrl || viewingItem.sourceUrl || viewingItem.facebookUrl || viewingItem.githubUrl || viewingItem.linkedinUrl) && (
+                  <div className="detail-links-section">
+                    <span className="detail-links-title">
+                      <Link2 size={13} /> Liên kết ngoài:
+                    </span>
+                    <div className="detail-links-list">
+                      {viewingItem.demoUrl && (
+                        <a href={viewingItem.demoUrl} target="_blank" rel="noreferrer" className="detail-ext-link">
+                          <Globe size={13} /> Live Demo URL <ExternalLink size={11} />
+                        </a>
+                      )}
+                      {viewingItem.sourceUrl && (
+                        <a href={viewingItem.sourceUrl} target="_blank" rel="noreferrer" className="detail-ext-link">
+                          <Link2 size={13} /> Source Code <ExternalLink size={11} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ================= 2. FULL-PAGE EDITOR VIEW =================
+  if (editing) {
+    const mainFields = config.fields.filter(([_, __, type]) => type === 'rich' || type === 'textarea' || _ === 'title' || _ === 'fullName' || _ === 'name' || _ === 'company')
+    const sideFields = config.fields.filter(([key, _, type]) => !mainFields.some(m => m[0] === key))
+
+    return (
+      <div className="admin-fullpage-editor-layout">
+        {/* Header Action Bar */}
+        <div className="admin-fullpage-header">
+          <div className="fullpage-header-left">
+            {!config.single && (
+              <button
+                type="button"
+                className="btn-back-to-list"
+                onClick={() => setEditing(null)}
+                disabled={isSaving}
+              >
+                <ArrowLeft size={16} />
+                <span>Quay lại danh sách</span>
+              </button>
+            )}
+
+            <div className="fullpage-title-wrap">
+              <span className="fullpage-eyebrow">
+                {config.single ? 'CÀI ĐẶT HỆ THỐNG' : 'SOẠN THẢO NỘI DUNG'} • {config.title.toUpperCase()}
+              </span>
+              <h2>
+                {editing.id ? 'Cập Nhật' : 'Thêm Mới'} {config.title} {editing.id ? `#${editing.id}` : ''}
+              </h2>
+            </div>
+          </div>
+
+          <div className="fullpage-header-right">
+            {!config.single && (
+              <button
+                type="button"
+                className="admin-btn-secondary"
+                disabled={isSaving}
+                onClick={() => setEditing(null)}
+              >
+                Hủy bỏ
+              </button>
+            )}
+
+            {/* Architecture Studio IDE Button in Editor Top Bar */}
+            {['projects', 'articles', 'work-items'].includes(section) && (
+              <button
+                type="button"
+                className="admin-btn-secondary"
+                onClick={() => setStudioOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(99, 102, 241, 0.12))',
+                  borderColor: 'rgba(99, 102, 241, 0.3)',
+                  color: '#4f46e5'
+                }}
+                title="Mở trình vẽ sơ đồ kiến trúc hệ thống (Mermaid IDE)"
+              >
+                <Workflow size={15} />
+                <span>Architecture Studio</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="admin-btn-primary"
+              disabled={isSaving}
+              onClick={save}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  <span>Đang lưu...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  <span>Lưu thay đổi</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Full-Page Editor Body (2 Spacious Columns) */}
+        <form onSubmit={save} className="admin-fullpage-body">
+          <div className="admin-editor-grid-modern">
+            {/* 1. Main Column (70% Width) */}
+            <div className="admin-editor-main-col">
+              {/* Primary Title / Name input */}
+              {config.fields.filter(([key]) => key === 'title' || key === 'fullName' || key === 'name' || key === 'company').map(([key, label, type = 'text']) => (
+                <div key={key} className="admin-editor-card title-card">
+                  <label className="field-label-large">
+                    <span>{label}</span>
+                  </label>
+                  <input
+                    type={type}
+                    className="admin-title-hero-input"
+                    placeholder={`Nhập ${label.toLowerCase()}...`}
+                    value={editing[key] || ''}
+                    onChange={e => setEditing({ ...editing, [key]: e.target.value })}
+                    required
+                  />
+                </div>
+              ))}
+
+              {/* Summary / Headline textareas */}
+              {config.fields.filter(([key, _, type]) => type === 'textarea' && key !== 'content' && key !== 'bio').map(([key, label]) => (
+                <div key={key} className="admin-editor-card">
+                  <label className="field-label">
+                    <FileText size={14} />
+                    <span>{label}</span>
+                  </label>
+                  <textarea
+                    className="admin-textarea-input"
+                    rows={4}
+                    placeholder={`Nhập ${label.toLowerCase()}...`}
+                    value={editing[key] || ''}
+                    onChange={e => setEditing({ ...editing, [key]: e.target.value })}
+                  />
+                </div>
+              ))}
+
+              {/* Rich Content / Bio / Description editors */}
+              {config.fields.filter(([_, __, type]) => type === 'rich').map(([key, label]) => (
+                <div key={key} className="admin-editor-card rich-card">
+                  <div className="rich-card-header">
+                    <label className="field-label-prominent">
+                      <Sparkles size={16} />
+                      <span>{label}</span>
+                    </label>
+
+                    {['projects', 'articles', 'work-items'].includes(section) && (
+                      <button
+                        type="button"
+                        className="btn-quick-insert-arch"
+                        onClick={() => setStudioOpen(true)}
+                      >
+                        <Workflow size={14} /> Chèn Sơ Đồ Kiến Trúc
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="rich-editor-fullpage-wrap">
+                    <RichEditor
+                      value={editing[key] || ''}
+                      onChange={value => setEditing({ ...editing, [key]: value })}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 2. Sidebar Column (30% Width) */}
+            <div className="admin-editor-side-col">
+              {/* Image Uploader */}
+              {config.fields.filter(([_, __, type]) => type === 'image_upload').map(([key, label, _, uploadFolder]) => (
+                <div key={key} className="admin-editor-card">
+                  <AdminImageUpload
+                    label={label}
+                    value={editing[key] || ''}
+                    folder={uploadFolder || 'portfolio/images'}
+                    onChange={(url) => setEditing({ ...editing, [key]: url })}
+                  />
+                </div>
+              ))}
+
+              {/* Settings, Categorization & Metadata */}
+              <div className="admin-editor-card">
+                <h4 className="side-card-heading">
+                  <Sliders size={15} /> Thuộc tính &amp; Phân loại
+                </h4>
+
+                <div className="side-fields-stack">
+                  {sideFields.filter(([_, __, type]) => type !== 'image_upload').map(([key, label, type = 'text', options]) => (
+                    <div key={key} className="side-field-group">
+                      {type !== 'checkbox' && (
+                        <label className="field-label-small">
+                          <span>{label}</span>
+                        </label>
+                      )}
+
+                      {type === 'category_select' ? (
+                        <select
+                          className="admin-select-input"
+                          value={editing.categoryId || (categoriesList[0]?.id ?? '')}
+                          onChange={e => setEditing({ ...editing, categoryId: Number(e.target.value) })}
+                        >
+                          {categoriesList.map(cat => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : type === 'select' ? (
+                        <select
+                          className="admin-select-input"
+                          value={editing[key] || options[0]}
+                          onChange={e => setEditing({ ...editing, [key]: e.target.value })}
+                        >
+                          {options.map(o => (
+                            <option key={o} value={o}>{o}</option>
+                          ))}
+                        </select>
+                      ) : type === 'checkbox' ? (
+                        <label className="admin-checkbox-card">
+                          <input
+                            type="checkbox"
+                            checked={!!editing[key]}
+                            onChange={e => setEditing({ ...editing, [key]: e.target.checked })}
+                          />
+                          <span className="checkbox-text">
+                            <strong>{label}</strong>
+                          </span>
+                        </label>
+                      ) : (
+                        <input
+                          className="admin-text-input"
+                          type={type}
+                          placeholder={`Nhập ${label.toLowerCase()}...`}
+                          value={editing[key] ?? ''}
+                          onChange={e =>
+                            setEditing({
+                              ...editing,
+                              [key]: type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value
+                            })
+                          }
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Save Card Shortcut */}
+              <div className="admin-editor-card side-save-card">
+                <button
+                  type="submit"
+                  className="admin-btn-primary full-width"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="animate-spin" size={16} />
+                      <span>Đang lưu...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check size={16} />
+                      <span>Lưu thay đổi ngay</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        {/* Architecture Studio Fullscreen IDE Modal */}
+        <ArchitectureStudioModal
+          isOpen={studioOpen}
+          onClose={() => setStudioOpen(false)}
+          initialTitle={editing.title || 'Sơ đồ Kiến trúc Hệ thống'}
+          onInsert={({ title: archTitle, code }) => {
+            const block = `\n<pre class="mermaid">\n${code}\n</pre>\n`
+            if (section === 'articles') {
+              setEditing(prev => ({ ...prev, content: (prev.content || '') + block }))
+            } else if (section === 'projects' || section === 'work-items') {
+              setEditing(prev => ({ ...prev, description: (prev.description || '') + block, content: (prev.content || '') + block }))
+            }
+            toast.success(`Đã chèn sơ đồ "${archTitle}" vào nội dung!`)
+          }}
+        />
+      </div>
+    )
+  }
+
+  // ================= 3. STANDARD DATA TABLE LIST VIEW =================
+  return (
+    <div className="admin-content-page">
+      {/* Top Header */}
+      <div className="admin-page-header">
+        <div>
+          <span className="admin-eyebrow">QUẢN TRỊ NỘI DUNG</span>
+          <h1 className="admin-title">{config.title}</h1>
+          <p className="admin-description">
+            {config.single
+              ? 'Quản lý thông tin profile, học vấn và giới thiệu bản thân hiển thị trên portfolio'
+              : `Quản lý, tìm kiếm và cập nhật dữ liệu ${config.title.toLowerCase()} trong hệ thống`}
+          </p>
+        </div>
+
+        <div className="admin-header-actions">
           {/* Refresh Button */}
           <button
             type="button"
-            className="admin-btn-secondary"
             onClick={() => load(true)}
-            disabled={isRefreshing || loading}
-            title="Làm mới dữ liệu từ server"
+            className="admin-btn-secondary"
+            disabled={isRefreshing}
+            title="Làm mới dữ liệu từ máy chủ"
           >
-            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+            <RefreshCw className={isRefreshing ? 'animate-spin' : ''} size={15} />
             <span>Làm mới</span>
           </button>
 
-          {/* Test Mail Button */}
+          {/* Test Email Button for Contacts */}
           {section === 'contacts' && (
             <button
               type="button"
@@ -502,24 +969,6 @@ export function AdminContentPage() {
             >
               {testingMail ? <Loader2 className="animate-spin" size={14} /> : <Mail size={14} />}
               <span>{testingMail ? 'Đang gửi test...' : 'Test Gửi Email'}</span>
-            </button>
-          )}
-
-          {/* Architecture Studio IDE Button */}
-          {['projects', 'articles', 'work-items'].includes(section) && (
-            <button
-              type="button"
-              className="admin-btn-secondary"
-              onClick={() => setStudioOpen(true)}
-              style={{
-                background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(99, 102, 241, 0.12))',
-                borderColor: 'rgba(99, 102, 241, 0.3)',
-                color: '#4f46e5'
-              }}
-              title="Mở trình thiết kế và vẽ sơ đồ kiến trúc hệ thống (Mermaid IDE)"
-            >
-              <Workflow size={15} />
-              <span>Architecture Studio</span>
             </button>
           )}
 
@@ -542,7 +991,7 @@ export function AdminContentPage() {
                 <BrainCircuit size={20} />
               </div>
               <div>
-                <h3>Trung Tâm Trí Tuệ & Tự Học Của AI Assistant</h3>
+                <h3>Trung Tâm Trí Tuệ &amp; Tự Học Của AI Assistant</h3>
                 <p>Tự động phân tích hội thoại người dùng, phát hiện khoảng trống tri thức và đúc kết Fact mới</p>
               </div>
             </div>
@@ -565,7 +1014,7 @@ export function AdminContentPage() {
               <div className="ai-insights-grid">
                 <div className="ai-insight-card">
                   <span className="ai-insight-label">
-                    <MessageSquare size={13} /> Hội thoại & Tin nhắn
+                    <MessageSquare size={13} /> Hội thoại &amp; Tin nhắn
                   </span>
                   <span className="ai-insight-val">{aiInsights.total_conversations || 0}</span>
                   <span className="ai-insight-sub">{aiInsights.total_messages || 0} lượt trao đổi ghi nhận</span>
@@ -749,54 +1198,44 @@ export function AdminContentPage() {
           <div className="admin-skeleton-row" />
           <div className="admin-skeleton-row" />
           <div className="admin-skeleton-row" />
-          <div className="admin-skeleton-row" />
         </div>
       ) : (
         <div className="admin-table-container">
-          <div className="admin-table-wrap">
-            <table>
+          <div className="admin-table-scroll">
+            <table className="admin-data-table">
               <thead>
                 <tr>
-                  <th style={{ width: '68px', textAlign: 'center' }}>STT</th>
+                  <th style={{ width: 60, textAlign: 'center' }}>STT</th>
                   <th>Nội dung chính</th>
-                  <th>Phân loại / Thông tin</th>
-                  <th style={{ width: '130px', textAlign: 'center' }}>Trạng thái</th>
-                  <th style={{ width: '110px', textAlign: 'center' }}>Thao tác</th>
+                  <th style={{ width: 180 }}>Thông tin phụ</th>
+                  <th style={{ width: 130, textAlign: 'center' }}>Trạng thái</th>
+                  <th style={{ width: 120, textAlign: 'center' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedItems.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="admin-empty-table-cell">
-                      <Sparkles size={28} className="empty-icon" />
-                      <strong>Không tìm thấy bản ghi nào</strong>
-                      <p>Thử tìm kiếm với từ khóa khác hoặc bấm nút Thêm mới bên trên.</p>
+                    <td colSpan={5} className="empty-table-cell">
+                      <div className="empty-table-wrap">
+                        <Layers size={36} className="empty-icon" />
+                        <p className="empty-title">Chưa có dữ liệu nào</p>
+                        <p className="empty-desc">
+                          {search ? 'Không tìm thấy kết quả phù hợp với từ khóa.' : 'Hãy bấm nút "Thêm mới" ở trên để tạo bản ghi đầu tiên.'}
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   paginatedItems.map((item, index) => {
-                    // STT chuẩn xác tính theo trang
                     const stt = (currentPage - 1) * pageSize + index + 1
-
-                    const itemTitle = renderCellText(item.title || item.name || item.fullName || item.displayName || item.subject) || 'Bản ghi'
-                    const rawSub = item.slug || item.email || item.headline || (typeof item.content === 'string' ? item.content.replace(/<[^>]*>?/gm, '').slice(0, 80) : '')
-                    const itemSub = renderCellText(rawSub)
-
-                    // Phân loại thông tin
-                    let itemInfo = '—'
-                    if (section === 'articles' && item.categoryId) {
-                      const matchedCat = categoriesList.find(c => c.id === item.categoryId)
-                      itemInfo = matchedCat ? matchedCat.name : `Danh mục #${item.categoryId}`
-                    } else {
-                      itemInfo = renderCellText(item.category || item.company || item.type || item.technologies || item.location) || '—'
-                    }
-
-                    // Trạng thái
-                    const rawStatus = item.status || (item.published === false ? 'DRAFT' : 'ACTIVE')
+                    const itemTitle = item.title || item.fullName || item.name || item.company || 'Bản ghi #' + item.id
+                    const itemSub = item.headline || item.role || item.position || item.summary || item.category || (item.email ? `Email: ${item.email}` : '')
+                    const itemInfo = item.technologies || item.category || (item.proficiency ? `Độ thông thạo: ${item.proficiency}%` : '') || (item.period ? `Thời gian: ${item.period}` : '') || (item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : '—')
+                    const rawStatus = item.status || (item.published === false ? 'DRAFT' : (item.isActive === false ? 'INACTIVE' : 'ACTIVE'))
 
                     return (
                       <tr key={item.id || index} className="admin-table-row">
-                        <td className="stt-cell">
+                        <td className="stt-cell" style={{ textAlign: 'center' }}>
                           <span className="stt-number">{stt}</span>
                         </td>
                         <td className="main-content-cell">
@@ -871,313 +1310,6 @@ export function AdminContentPage() {
           )}
         </div>
       )}
-
-      {/* Spacious 900px Edit / Create Modal */}
-      {editing && (
-        <div className="admin-modal-backdrop" onClick={() => !isSaving && setEditing(null)}>
-          <div className="admin-modal-card" onClick={e => e.stopPropagation()}>
-            <form onSubmit={save}>
-              {/* Modal Header */}
-              <header className="modal-header">
-                <div>
-                  <span className="modal-tag">EDITOR PANEL</span>
-                  <h2>{editing.id ? 'Cập Nhật' : 'Thêm Mới'} {config.title}</h2>
-                </div>
-                <button
-                  type="button"
-                  className="modal-close-btn"
-                  disabled={isSaving}
-                  onClick={() => setEditing(null)}
-                >
-                  <X size={18} />
-                </button>
-              </header>
-
-              {/* Modal Body with 2-Column Grid */}
-              <div className="modal-body">
-                <div className="admin-form-grid-modern">
-                  {config.fields.map(([key, label, type = 'text', options, uploadFolder]) => {
-                    const isWide = type === 'rich' || type === 'textarea' || type === 'image_upload'
-
-                    return (
-                      <div
-                        className={`form-field-group ${isWide ? 'full-width' : ''}`}
-                        key={key}
-                      >
-                        {type !== 'checkbox' && type !== 'image_upload' && (
-                          <label className="field-label">
-                            <span>{label}</span>
-                          </label>
-                        )}
-
-                        {/* Category Select */}
-                        {type === 'category_select' ? (
-                          <select
-                            className="admin-select-input"
-                            value={editing.categoryId || (categoriesList[0]?.id ?? '')}
-                            onChange={e => setEditing({ ...editing, categoryId: Number(e.target.value) })}
-                          >
-                            {categoriesList.map(cat => (
-                              <option key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : type === 'image_upload' ? (
-                          /* Image Upload Component */
-                          <AdminImageUpload
-                            label={label}
-                            value={editing[key] || ''}
-                            folder={uploadFolder || 'portfolio/images'}
-                            onChange={(url) => setEditing({ ...editing, [key]: url })}
-                          />
-                        ) : type === 'rich' ? (
-                          /* Rich Text Editor */
-                          <div className="rich-editor-wrap">
-                            <RichEditor
-                              value={editing[key] || ''}
-                              onChange={value => setEditing({ ...editing, [key]: value })}
-                            />
-                          </div>
-                        ) : type === 'textarea' ? (
-                          <textarea
-                            className="admin-textarea-input"
-                            rows="4"
-                            placeholder={`Nhập ${label.toLowerCase()}...`}
-                            value={editing[key] || ''}
-                            onChange={e => setEditing({ ...editing, [key]: e.target.value })}
-                          />
-                        ) : type === 'select' ? (
-                          <select
-                            className="admin-select-input"
-                            value={editing[key] || options[0]}
-                            onChange={e => setEditing({ ...editing, [key]: e.target.value })}
-                          >
-                            {options.map(o => (
-                              <option key={o} value={o}>{o}</option>
-                            ))}
-                          </select>
-                        ) : type === 'checkbox' ? (
-                          <label className="admin-checkbox-card">
-                            <input
-                              type="checkbox"
-                              checked={!!editing[key]}
-                              onChange={e => setEditing({ ...editing, [key]: e.target.checked })}
-                            />
-                            <span className="checkbox-text">
-                              <strong>{label}</strong>
-                            </span>
-                          </label>
-                        ) : (
-                          <input
-                            className="admin-text-input"
-                            type={type}
-                            placeholder={`Nhập ${label.toLowerCase()}...`}
-                            value={editing[key] ?? ''}
-                            onChange={e =>
-                              setEditing({
-                                ...editing,
-                                [key]: type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value
-                              })
-                            }
-                          />
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Sticky Footer */}
-              <footer className="modal-footer">
-                <button
-                  type="button"
-                  className="modal-btn-cancel"
-                  disabled={isSaving}
-                  onClick={() => setEditing(null)}
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="modal-btn-save"
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="animate-spin" size={16} />
-                      <span>Đang lưu...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check size={16} />
-                      <span>Lưu thay đổi</span>
-                    </>
-                  )}
-                </button>
-              </footer>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Detail View Modal */}
-      {viewingItem && (
-        <div className="admin-modal-backdrop" onClick={() => setViewingItem(null)}>
-          <div className="admin-modal-card" style={{ maxWidth: 960 }} onClick={e => e.stopPropagation()}>
-            <header className="modal-header">
-              <div>
-                <span className="modal-tag">CHI TIẾT DỮ LIỆU</span>
-                <h2>{viewingItem.title || viewingItem.name || viewingItem.company || config.title} {viewingItem.id && `#${viewingItem.id}`}</h2>
-              </div>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setViewingItem(null)}
-              >
-                <X size={18} />
-              </button>
-            </header>
-
-            <div className="modal-body">
-              {/* Meta summary grid */}
-              <div className="detail-view-meta-grid">
-                {viewingItem.id && (
-                  <div className="detail-meta-item">
-                    <span className="detail-meta-label">Mã ID</span>
-                    <span className="detail-meta-val">#{viewingItem.id}</span>
-                  </div>
-                )}
-                <div className="detail-meta-item">
-                  <span className="detail-meta-label">Trạng thái</span>
-                  <div>
-                    <AdminStatusBadge status={viewingItem.status || (viewingItem.published === false ? 'DRAFT' : 'ACTIVE')} />
-                  </div>
-                </div>
-                {(viewingItem.category || viewingItem.categoryId) && (
-                  <div className="detail-meta-item">
-                    <span className="detail-meta-label">Chuyên mục</span>
-                    <span className="detail-meta-val">
-                      {categoriesList.find(c => c.id === viewingItem.categoryId)?.name || viewingItem.category || '—'}
-                    </span>
-                  </div>
-                )}
-                {viewingItem.createdAt && (
-                  <div className="detail-meta-item">
-                    <span className="detail-meta-label">Ngày tạo</span>
-                    <span className="detail-meta-val">{new Date(viewingItem.createdAt).toLocaleString('vi-VN')}</span>
-                  </div>
-                )}
-                {viewingItem.updatedAt && (
-                  <div className="detail-meta-item">
-                    <span className="detail-meta-label">Cập nhật lần cuối</span>
-                    <span className="detail-meta-val">{new Date(viewingItem.updatedAt).toLocaleString('vi-VN')}</span>
-                  </div>
-                )}
-                {viewingItem.slug && (
-                  <div className="detail-meta-item">
-                    <span className="detail-meta-label">Đường dẫn Slug</span>
-                    <span className="detail-meta-val" style={{ fontFamily: 'monospace', fontSize: 12 }}>{viewingItem.slug}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Cover / Image Preview */}
-              {(viewingItem.thumbnailUrl || viewingItem.coverUrl || viewingItem.imageUrl || viewingItem.avatarUrl) && (
-                <div className="detail-view-image-preview">
-                  <img
-                    src={viewingItem.thumbnailUrl || viewingItem.coverUrl || viewingItem.imageUrl || viewingItem.avatarUrl}
-                    alt="Preview"
-                  />
-                </div>
-              )}
-
-              {/* Summary */}
-              {viewingItem.summary && (
-                <div style={{ marginBottom: 20 }}>
-                  <h4 style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--adm-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tóm tắt ngắn gọn</h4>
-                  <p style={{ margin: 0, padding: 14, background: 'var(--adm-surface-subtle)', borderRadius: 10, border: '1px solid var(--adm-border)', fontSize: 13.5, lineHeight: 1.6 }}>
-                    {viewingItem.summary}
-                  </p>
-                </div>
-              )}
-
-              {/* Full Rich Content or Raw Content */}
-              {(viewingItem.content || viewingItem.description || viewingItem.message) && (
-                <div>
-                  <h4 style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--adm-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nội dung chi tiết</h4>
-                  <div
-                    className="detail-view-rich-content"
-                    dangerouslySetInnerHTML={{ __html: viewingItem.content || viewingItem.description || viewingItem.message }}
-                  />
-                </div>
-              )}
-            </div>
-
-            <footer className="modal-footer">
-              {/* Public view button */}
-              {section === 'articles' && viewingItem.slug && (
-                <a
-                  href={`/knowledge/${viewingItem.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="admin-btn-secondary"
-                >
-                  <ExternalLink size={14} />
-                  <span>Xem trang bài viết</span>
-                </a>
-              )}
-              {section === 'projects' && viewingItem.id && (
-                <a
-                  href={`/projects/${viewingItem.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="admin-btn-secondary"
-                >
-                  <ExternalLink size={14} />
-                  <span>Xem trang dự án</span>
-                </a>
-              )}
-              {section === 'work-items' && (viewingItem.slug || viewingItem.id) && (
-                <a
-                  href={`/work-process/${viewingItem.slug || viewingItem.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="admin-btn-secondary"
-                >
-                  <ExternalLink size={14} />
-                  <span>Xem quy trình</span>
-                </a>
-              )}
-              {!config.readonly && (
-                <button
-                  type="button"
-                  className="admin-btn-primary"
-                  onClick={() => {
-                    const toEdit = { ...viewingItem }
-                    setViewingItem(null)
-                    setEditing(toEdit)
-                  }}
-                >
-                  <Edit3 size={14} />
-                  <span>Chỉnh sửa bản ghi</span>
-                </button>
-              )}
-              <button
-                type="button"
-                className="modal-btn-cancel"
-                onClick={() => setViewingItem(null)}
-              >
-                Đóng
-              </button>
-            </footer>
-          </div>
-        </div>
-      )}
-      <ArchitectureStudioModal
-        isOpen={studioOpen}
-        onClose={() => setStudioOpen(false)}
-      />
     </div>
   )
 }
