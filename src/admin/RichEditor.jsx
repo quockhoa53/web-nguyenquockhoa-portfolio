@@ -1,5 +1,5 @@
 import { Editor } from '@tinymce/tinymce-react'
-import { Sparkles, Workflow } from 'lucide-react'
+import { Workflow } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { ArchitectureStudioModal } from './components/ArchitectureStudioModal'
 
@@ -15,6 +15,7 @@ const editorContentStyle = `
   pre.mermaid { background: #0f172a; border: 1px solid #38bdf8; color: #38bdf8; padding: 16px; border-radius: 10px; font-size: 13px; }
   table { width: 100%; border-collapse: collapse; } th, td { padding: 10px; border: 1px solid #cbd5e1; }
   a { color: #4f46e5; }
+  .architecture-diagram-container { border: 1px dashed #0284c7; padding: 12px; border-radius: 8px; margin: 16px 0; background: rgba(2, 132, 199, 0.03); }
 `
 
 async function uploadEditorImage(blobInfo) {
@@ -40,20 +41,32 @@ async function uploadEditorImage(blobInfo) {
 
 export function RichEditor({ value, onChange, minHeight = 620 }) {
   const editorRef = useRef(null)
-  const savedBookmarkRef = useRef(null)
   const [studioOpen, setStudioOpen] = useState(false)
 
   function openStudio() {
     if (editorRef.current) {
-      editorRef.current.focus()
-      try {
-        // Save exact cursor position bookmark before opening modal
-        savedBookmarkRef.current = editorRef.current.selection.getBookmark(2, true)
-      } catch {
-        savedBookmarkRef.current = null
+      const editor = editorRef.current
+      editor.focus()
+      // Remove any existing leftover marker
+      const oldMarker = editor.dom.get('arch_studio_marker')
+      if (oldMarker) {
+        editor.dom.remove(oldMarker)
       }
+      // Plant a unique DOM marker right at the active cursor location!
+      editor.insertContent('<span id="arch_studio_marker" data-arch-marker="true"></span>')
     }
     setStudioOpen(true)
+  }
+
+  function handleCloseStudio() {
+    if (editorRef.current) {
+      const editor = editorRef.current
+      const marker = editor.dom.get('arch_studio_marker')
+      if (marker) {
+        editor.dom.remove(marker)
+      }
+    }
+    setStudioOpen(false)
   }
 
   function handleInsertDiagram({ title, description, code }) {
@@ -72,17 +85,16 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
 `
 
     if (editorRef.current) {
-      editorRef.current.focus()
-      // Restore cursor position bookmark so insertion happens precisely where cursor was placed!
-      if (savedBookmarkRef.current) {
-        try {
-          editorRef.current.selection.moveToBookmark(savedBookmarkRef.current)
-        } catch {
-          // ignore bookmark error
-        }
+      const editor = editorRef.current
+      editor.focus()
+      const marker = editor.dom.get('arch_studio_marker')
+      if (marker) {
+        // Select the marker element and replace it cleanly with the diagram HTML
+        editor.selection.select(marker)
+        editor.insertContent(htmlToInsert)
+      } else {
+        editor.insertContent(htmlToInsert)
       }
-      editorRef.current.insertContent(htmlToInsert)
-      savedBookmarkRef.current = null
     } else {
       onChange((value || '') + '\n' + htmlToInsert)
     }
@@ -100,7 +112,7 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
           title="Mở trình thiết kế sơ đồ và chèn chính xác tại vị trí con trỏ chuột"
         >
           <Workflow size={15} />
-          <span>🏛️ Mở Architecture Studio IDE (Chèn Sơ Đồ Tại Con Trỏ)</span>
+          <span>🏛️ Mở Architecture Studio IDE (Chèn Sơ Đồ Tại Vị Trí Con Trỏ)</span>
         </button>
       </div>
 
@@ -146,7 +158,7 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
 
       <ArchitectureStudioModal
         isOpen={studioOpen}
-        onClose={() => setStudioOpen(false)}
+        onClose={handleCloseStudio}
         onInsert={handleInsertDiagram}
       />
     </div>
