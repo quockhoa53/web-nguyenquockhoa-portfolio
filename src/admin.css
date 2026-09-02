@@ -1564,7 +1564,31 @@
   animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.admin-modal-card > form {
+.admin-modal-card-compact {
+  width: 100%;
+  max-width: 580px;
+  background: var(--adm-surface, #ffffff);
+  border: 1px solid var(--adm-border, #e2e8f0);
+  border-radius: 20px;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+  overflow: hidden;
+  position: relative;
+  animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1001;
+}
+
+.dark .admin-modal-card-compact,
+.admin-app.dark-mode .admin-modal-card-compact {
+  background: #101017;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7);
+}
+
+.admin-modal-card > form,
+.admin-modal-card-compact > form {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1572,6 +1596,7 @@
   min-height: 0;
   overflow: hidden;
   flex: 1;
+  background: inherit;
 }
 
 @keyframes modalScaleIn {
