@@ -12,54 +12,61 @@ import {
   ZoomOut
 } from 'lucide-react'
 import mermaid from 'mermaid'
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+let mermaidInitialized = false
 
 function initMermaid(isDark = false) {
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'loose',
-    theme: isDark ? 'dark' : 'default',
-    themeVariables: isDark
-      ? {
-          darkMode: true,
-          background: '#0a0f1d',
-          primaryColor: '#6366f1',
-          primaryTextColor: '#ffffff',
-          primaryBorderColor: '#818cf8',
-          lineColor: '#38bdf8',
-          secondaryColor: '#0284c7',
-          tertiaryColor: '#1e293b',
-          textColor: '#e2e8f0',
-          mainBkg: '#0f172a',
-          nodeBorder: '#818cf8',
-          clusterBkg: 'rgba(15, 23, 42, 0.75)',
-          clusterBorder: 'rgba(255, 255, 255, 0.18)',
-          titleColor: '#38bdf8',
-          edgeLabelBackground: '#0f172a'
-        }
-      : {
-          darkMode: false,
-          background: '#ffffff',
-          primaryColor: '#e0f2fe',
-          primaryTextColor: '#0f172a',
-          primaryBorderColor: '#0284c7',
-          lineColor: '#0284c7',
-          secondaryColor: '#f1f5f9',
-          tertiaryColor: '#f8fafc',
-          textColor: '#1e293b',
-          mainBkg: '#ffffff',
-          nodeBorder: '#0284c7',
-          clusterBkg: '#f8fafc',
-          clusterBorder: '#cbd5e1',
-          titleColor: '#0284c7',
-          edgeLabelBackground: '#ffffff'
-        },
-    flowchart: {
-      useMaxWidth: false,
-      htmlLabels: true,
-      curve: 'basis'
-    }
-  })
+  try {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'loose',
+      theme: isDark ? 'dark' : 'default',
+      themeVariables: isDark
+        ? {
+            darkMode: true,
+            background: '#0a0f1d',
+            primaryColor: '#6366f1',
+            primaryTextColor: '#ffffff',
+            primaryBorderColor: '#818cf8',
+            lineColor: '#38bdf8',
+            secondaryColor: '#0284c7',
+            tertiaryColor: '#1e293b',
+            textColor: '#e2e8f0',
+            mainBkg: '#0f172a',
+            nodeBorder: '#818cf8',
+            clusterBkg: 'rgba(15, 23, 42, 0.75)',
+            clusterBorder: 'rgba(255, 255, 255, 0.18)',
+            titleColor: '#38bdf8',
+            edgeLabelBackground: '#0f172a'
+          }
+        : {
+            darkMode: false,
+            background: '#ffffff',
+            primaryColor: '#e0f2fe',
+            primaryTextColor: '#0f172a',
+            primaryBorderColor: '#0284c7',
+            lineColor: '#0284c7',
+            secondaryColor: '#f1f5f9',
+            tertiaryColor: '#f8fafc',
+            textColor: '#1e293b',
+            mainBkg: '#ffffff',
+            nodeBorder: '#0284c7',
+            clusterBkg: '#f8fafc',
+            clusterBorder: '#cbd5e1',
+            titleColor: '#0284c7',
+            edgeLabelBackground: '#ffffff'
+          },
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        curve: 'basis'
+      }
+    })
+    mermaidInitialized = true
+  } catch (e) {
+    console.error('Mermaid init error:', e)
+  }
 }
 
 export function ArchitectureViewer({
@@ -67,13 +74,11 @@ export function ArchitectureViewer({
   title = 'Sơ đồ Kiến trúc Hệ thống',
   description = '',
   allowFullscreen = true,
-  defaultHeight = '520px',
+  defaultHeight = '560px',
   className = ''
 }) {
   const containerRef = useRef(null)
   const canvasRef = useRef(null)
-  const rawId = useId().replace(/:/g, '')
-  const diagramId = `mermaid-arch-${rawId}`
 
   const [svgHtml, setSvgHtml] = useState('')
   const [error, setError] = useState(null)
@@ -117,7 +122,7 @@ export function ArchitectureViewer({
     if (sWidth > 0 && sHeight > 0 && cWidth > 0 && cHeight > 0) {
       const scaleX = cWidth / sWidth
       const scaleY = cHeight / sHeight
-      const fitScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.5), 1.1)
+      const fitScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.4), 1.1)
       setScale(fitScale)
       setPosition({ x: 0, y: 0 })
     }
@@ -135,15 +140,16 @@ export function ArchitectureViewer({
     try {
       initMermaid(isDarkTheme)
       setError(null)
-      const renderId = `${diagramId}-${Date.now()}`
-      const { svg } = await mermaid.render(renderId, cleanCode)
+      const safeId = `mermaid_diag_${Math.random().toString(36).substring(2, 9)}`
+      
+      const { svg } = await mermaid.render(safeId, cleanCode)
       setSvgHtml(svg)
-      setTimeout(autoFitDiagram, 100)
+      setTimeout(autoFitDiagram, 80)
     } catch (err) {
       console.warn('Mermaid rendering error:', err)
       setError(err?.message || 'Cú pháp sơ đồ Mermaid chưa hợp lệ.')
     }
-  }, [diagramCode, isDarkTheme, diagramId, autoFitDiagram])
+  }, [diagramCode, isDarkTheme, autoFitDiagram])
 
   useEffect(() => {
     renderDiagram()
@@ -178,7 +184,6 @@ export function ArchitectureViewer({
   // Mouse Down handler
   function handleMouseDown(e) {
     if (showSource || error) return
-    // Only drag on left click
     if (e.button !== 0) return
     setIsDragging(true)
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
@@ -189,7 +194,7 @@ export function ArchitectureViewer({
     if (showSource || error) return
     e.preventDefault()
     const zoomFactor = e.deltaY < 0 ? 0.12 : -0.12
-    setScale(prev => Math.min(Math.max(prev + zoomFactor, 0.25), 3.5))
+    setScale(prev => Math.min(Math.max(prev + zoomFactor, 0.2), 3.5))
   }
 
   // Zoom helpers
@@ -198,7 +203,7 @@ export function ArchitectureViewer({
   }
 
   function zoomOut() {
-    setScale(prev => Math.max(prev - 0.2, 0.25))
+    setScale(prev => Math.max(prev - 0.2, 0.2))
   }
 
   function resetView() {
