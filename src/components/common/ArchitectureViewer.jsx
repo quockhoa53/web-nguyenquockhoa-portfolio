@@ -70,6 +70,28 @@ function initMermaid(isDark = false) {
   }
 }
 
+let renderQueue = Promise.resolve()
+
+function queueMermaidRender(id, code) {
+  const task = async () => {
+    let lastError = null
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const res = await mermaid.render(id, code)
+        return res
+      } catch (err) {
+        lastError = err
+        await new Promise(r => setTimeout(r, 60 * attempt))
+      }
+    }
+    throw lastError
+  }
+
+  const resultPromise = renderQueue.then(task, task)
+  renderQueue = resultPromise.catch(() => {})
+  return resultPromise
+}
+
 export function ArchitectureViewer({
   diagramCode = '',
   title = 'Sơ đồ Kiến trúc Hệ thống',
@@ -129,8 +151,8 @@ export function ArchitectureViewer({
     }
   }, [])
 
-  // Render Mermaid Diagram
-  const renderDiagram = useCallback(async () => {
+  // Render Mermaid Diagram with sequential queue and auto-retry
+  const renderDiagram = useCallback(async (isRetry = false) => {
     let cleanCode = (diagramCode || '').trim()
     if (!cleanCode) {
       setSvgHtml('')
@@ -149,14 +171,21 @@ export function ArchitectureViewer({
     try {
       initMermaid(isDarkTheme)
       setError(null)
-      const safeId = `mermaid_diag_${Math.random().toString(36).substring(2, 9)}`
+      const safeId = `mermaid_diag_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`
       
-      const { svg } = await mermaid.render(safeId, cleanCode)
+      const { svg } = await queueMermaidRender(safeId, cleanCode)
       setSvgHtml(svg)
       setTimeout(autoFitDiagram, 80)
     } catch (err) {
       console.warn('Mermaid rendering error:', err)
-      setError(err?.message || 'Cú pháp sơ đồ Mermaid chưa hợp lệ.')
+      if (!isRetry) {
+        // Auto-retry once silently in background after 120ms without showing error screen
+        setTimeout(() => {
+          renderDiagram(true)
+        }, 120)
+      } else {
+        setError(err?.message || 'Cú pháp sơ đồ Mermaid chưa hợp lệ.')
+      }
     } finally {
       // Purge any orphan error elements that mermaid might have appended to document.body
       document.querySelectorAll('[id^="dmermaid"], [id^="mermaid-"]').forEach(el => {
