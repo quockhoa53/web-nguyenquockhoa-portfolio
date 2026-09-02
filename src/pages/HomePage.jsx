@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, BriefcaseBusiness, Download } from 'lucide-react'
+import { ArrowRight, BriefcaseBusiness, Code2, Download, Layers3, Server, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { CardsSkeleton, HeroSkeleton } from '../components/common/Skeletons'
 import { TiltCard } from '../components/common/TiltCard'
