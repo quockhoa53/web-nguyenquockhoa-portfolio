@@ -24,12 +24,53 @@ function isMermaidCode(text) {
 }
 
 function cleanMermaidCode(text) {
-  let trimmed = (text || '').trim()
-  // If it's a flowchart fragment missing header, default to graph TD
-  if (!/^(graph\s+(TD|TB|BT|RL|LR)|flowchart\s+(TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap|quadrantChart|journey|gitGraph|architecture-beta)/m.test(trimmed)) {
-    trimmed = 'graph TD\n' + trimmed
+  if (!text || typeof text !== 'string') return ''
+  let clean = text.trim()
+
+  // 1. Unescape HTML entities
+  clean = clean
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+
+  // 2. Search for the standard declaration keyword ANYWHERE in the text
+  const declMatch = clean.match(/\b(graph\s+(TD|TB|BT|RL|LR)|flowchart\s+(TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap|quadrantChart|journey|gitGraph|architecture-beta|packet-beta)\b/i)
+
+  if (declMatch && declMatch.index !== undefined) {
+    // Cut out any preceding text/titles (e.g. "🏛️ Sơ đồ Kiến trúc Hệ thống") so we only feed valid Mermaid DSL to Mermaid!
+    clean = clean.slice(declMatch.index).trim()
+  } else {
+    // If no declaration keyword was found, check if it's a list of node definitions/connections
+    const lines = clean.split('\n')
+    const validLines = []
+    let foundStart = false
+
+    for (const line of lines) {
+      const trimmedLine = line.trim()
+      if (!trimmedLine) continue
+      if (
+        foundStart ||
+        trimmedLine.includes('-->') ||
+        trimmedLine.includes('-.->') ||
+        trimmedLine.includes('==>') ||
+        trimmedLine.includes('subgraph') ||
+        trimmedLine.includes('classDef') ||
+        /^[a-zA-Z0-9_-]+(\[|\(|\{)/.test(trimmedLine)
+      ) {
+        foundStart = true
+        validLines.push(trimmedLine)
+      }
+    }
+
+    if (validLines.length > 0) {
+      clean = 'graph TD\n' + validLines.join('\n')
+    }
   }
-  return trimmed
+
+  return clean
 }
 
 export function InteractiveHtmlContent({ html = '', className = '' }) {

@@ -1,18 +1,18 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import mermaid from 'mermaid'
 import {
-  Code2,
+  Code,
   Copy,
-  Download,
-  Eye,
+  Check,
   Maximize2,
   Minimize2,
-  Move,
-  RefreshCw,
-  Sparkles,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  RotateCcw,
+  Sparkles,
+  Workflow,
+  AlertCircle
 } from 'lucide-react'
-import mermaid from 'mermaid'
-import { useCallback, useEffect, useRef, useState } from 'react'
 
 let mermaidInitialized = false
 
@@ -20,6 +20,7 @@ function initMermaid(isDark = false) {
   try {
     mermaid.initialize({
       startOnLoad: false,
+      suppressErrorRendering: true, // Suppress injecting error SVGs into document.body
       securityLevel: 'loose',
       theme: isDark ? 'dark' : 'default',
       themeVariables: isDark
@@ -130,11 +131,19 @@ export function ArchitectureViewer({
 
   // Render Mermaid Diagram
   const renderDiagram = useCallback(async () => {
-    const cleanCode = (diagramCode || '').trim()
+    let cleanCode = (diagramCode || '').trim()
     if (!cleanCode) {
       setSvgHtml('')
       setError('Chưa có mã sơ đồ Mermaid.')
       return
+    }
+
+    // Auto-fix: if code contains a header declaration further down, strip preceding non-DSL text
+    const declMatch = cleanCode.match(/\b(graph\s+(TD|TB|BT|RL|LR)|flowchart\s+(TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap|quadrantChart|journey|gitGraph|architecture-beta)\b/i)
+    if (declMatch && declMatch.index !== undefined) {
+      cleanCode = cleanCode.slice(declMatch.index).trim()
+    } else if (!/^(graph\s+(TD|TB|BT|RL|LR)|flowchart\s+(TD|TB|BT|RL|LR)|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap|quadrantChart|journey|gitGraph|architecture-beta)/m.test(cleanCode)) {
+      cleanCode = 'graph TD\n' + cleanCode
     }
 
     try {
@@ -148,6 +157,13 @@ export function ArchitectureViewer({
     } catch (err) {
       console.warn('Mermaid rendering error:', err)
       setError(err?.message || 'Cú pháp sơ đồ Mermaid chưa hợp lệ.')
+    } finally {
+      // Purge any orphan error elements that mermaid might have appended to document.body
+      document.querySelectorAll('[id^="dmermaid"], [id^="mermaid-"]').forEach(el => {
+        if (el.parentNode === document.body) {
+          el.remove()
+        }
+      })
     }
   }, [diagramCode, isDarkTheme, autoFitDiagram])
 
@@ -175,139 +191,112 @@ export function ArchitectureViewer({
       window.addEventListener('mousemove', handleGlobalMouseMove)
       window.addEventListener('mouseup', handleGlobalMouseUp)
     }
+
     return () => {
       window.removeEventListener('mousemove', handleGlobalMouseMove)
       window.removeEventListener('mouseup', handleGlobalMouseUp)
     }
   }, [isDragging, dragStart])
 
-  // Mouse Down handler
   function handleMouseDown(e) {
-    if (showSource || error) return
     if (e.button !== 0) return
+    if (e.target.closest('.arch-toolbar') || e.target.closest('.arch-source-modal')) return
     setIsDragging(true)
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    })
   }
 
-  // Wheel zoom handler
   function handleWheel(e) {
-    if (showSource || error) return
     e.preventDefault()
-    const zoomFactor = e.deltaY < 0 ? 0.12 : -0.12
-    setScale(prev => Math.min(Math.max(prev + zoomFactor, 0.2), 3.5))
+    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9
+    setScale(prev => Math.min(Math.max(prev * zoomFactor, 0.3), 3.0))
   }
 
-  // Zoom helpers
-  function zoomIn() {
-    setScale(prev => Math.min(prev + 0.2, 3.5))
+  function handleZoomIn() {
+    setScale(prev => Math.min(prev + 0.15, 3.0))
   }
 
-  function zoomOut() {
-    setScale(prev => Math.max(prev - 0.2, 0.2))
+  function handleZoomOut() {
+    setScale(prev => Math.max(prev - 0.15, 0.3))
   }
 
-  function resetView() {
+  function handleReset() {
     autoFitDiagram()
   }
 
-  // Download SVG
-  function downloadSvg() {
-    if (!svgHtml) return
-    const blob = new Blob([svgHtml], { type: 'image/svg+xml;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${title.toLowerCase().replace(/[^a-z0-9]/gi, '_') || 'architecture_diagram'}.svg`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
-  // Copy Mermaid Code
-  function copyCode() {
-    if (!diagramCode) return
-    navigator.clipboard.writeText(diagramCode)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  async function handleCopySource() {
+    try {
+      await navigator.clipboard.writeText(diagramCode)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // ignore
+    }
   }
 
   return (
     <div
       ref={containerRef}
-      className={`arch-viewer-card ${isFullscreen ? 'fullscreen-mode' : ''} ${className}`}
+      className={`arch-viewer-wrapper ${isFullscreen ? 'arch-fullscreen' : ''} ${className}`}
+      style={{ height: isFullscreen ? '100vh' : defaultHeight }}
     >
-      {/* Header Bar */}
-      <div className="arch-viewer-header">
-        <div className="arch-viewer-title-group">
-          <div className="arch-badge-icon">
-            <Sparkles size={16} />
+      {/* Top Header Bar */}
+      <div className="arch-header-bar">
+        <div className="arch-header-left">
+          <div className="arch-badge">
+            <Sparkles size={14} />
+            <span>INTERACTIVE ARCHITECTURE</span>
           </div>
-          <div>
-            <h4 className="arch-title">{title}</h4>
-            {description && <p className="arch-desc">{description}</p>}
-          </div>
+          <h3 className="arch-title">{title}</h3>
+          {description && <p className="arch-desc">{description}</p>}
         </div>
 
-        {/* Action Controls Bar */}
-        <div className="arch-controls-bar">
+        <div className="arch-header-right arch-toolbar">
           <button
             type="button"
-            className={`arch-btn ${showSource ? 'active' : ''}`}
-            onClick={() => setShowSource(prev => !prev)}
-            title={showSource ? 'Xem giao diện sơ đồ' : 'Xem mã nguồn Mermaid'}
+            className="arch-tool-btn"
+            onClick={() => setShowSource(!showSource)}
+            title="Xem mã nguồn Mermaid DSL"
           >
-            {showSource ? <Eye size={15} /> : <Code2 size={15} />}
-            <span>{showSource ? 'Sơ đồ' : 'Mã nguồn'}</span>
+            <Code size={15} />
+            <span>Mã nguồn</span>
           </button>
 
-          {!showSource && (
-            <>
-              <div className="arch-btn-divider" />
-              <button
-                type="button"
-                className="arch-btn icon-only"
-                onClick={zoomIn}
-                title="Phóng to (+)"
-              >
-                <ZoomIn size={15} />
-              </button>
-              <button
-                type="button"
-                className="arch-btn icon-only"
-                onClick={zoomOut}
-                title="Thu nhỏ (-)"
-              >
-                <ZoomOut size={15} />
-              </button>
-              <button
-                type="button"
-                className="arch-btn icon-only"
-                onClick={resetView}
-                title="Tự động căn vừa khung nhìn (Fit to screen)"
-              >
-                <RefreshCw size={14} />
-              </button>
-              <div className="arch-btn-divider" />
-            </>
-          )}
+          <button
+            type="button"
+            className="arch-tool-btn"
+            onClick={handleZoomIn}
+            title="Phóng to"
+          >
+            <ZoomIn size={15} />
+          </button>
 
           <button
             type="button"
-            className="arch-btn icon-only"
-            onClick={downloadSvg}
-            disabled={!svgHtml || Boolean(error)}
-            title="Tải về file SVG chất lượng cao"
+            className="arch-tool-btn"
+            onClick={handleZoomOut}
+            title="Thu nhỏ"
           >
-            <Download size={15} />
+            <ZoomOut size={15} />
+          </button>
+
+          <button
+            type="button"
+            className="arch-tool-btn"
+            onClick={handleReset}
+            title="Đặt lại tỷ lệ"
+          >
+            <RotateCcw size={15} />
           </button>
 
           {allowFullscreen && (
             <button
               type="button"
-              className="arch-btn icon-only"
-              onClick={() => setIsFullscreen(prev => !prev)}
-              title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Xem toàn màn hình'}
+              className="arch-tool-btn"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
             >
               {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
             </button>
@@ -315,51 +304,68 @@ export function ArchitectureViewer({
         </div>
       </div>
 
-      {/* Main Canvas Body */}
+      {/* Main Interactive Canvas Area */}
       <div
         ref={canvasRef}
-        className="arch-canvas-body"
-        style={{ height: isFullscreen ? 'calc(100vh - 100px)' : defaultHeight }}
+        className={`arch-canvas-viewport ${isDragging ? 'is-dragging' : ''}`}
         onMouseDown={handleMouseDown}
         onWheel={handleWheel}
       >
+        {/* Error State */}
         {error ? (
           <div className="arch-error-box">
-            <b>Không thể hiển thị sơ đồ Mermaid</b>
+            <AlertCircle size={28} />
+            <h4>Không thể hiển thị sơ đồ Mermaid</h4>
             <p>{error}</p>
-            <button type="button" className="btn primary" onClick={renderDiagram}>
-              <RefreshCw size={14} /> Thử tải lại
+            <button type="button" className="btn-retry" onClick={renderDiagram}>
+              <RotateCcw size={14} /> Thử tải lại
             </button>
           </div>
-        ) : showSource ? (
-          <div className="arch-source-view">
-            <div className="arch-source-header">
-              <span>Cú pháp Mermaid</span>
-              <button type="button" className="arch-btn" onClick={copyCode}>
-                <Copy size={13} /> {copied ? 'Đã sao chép!' : 'Sao chép mã'}
-              </button>
-            </div>
-            <pre className="arch-code-block">{diagramCode}</pre>
-          </div>
-        ) : (
+        ) : svgHtml ? (
           <div
-            className={`arch-svg-viewport ${isDragging ? 'is-dragging' : ''}`}
+            className="arch-svg-container"
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
               transformOrigin: 'center center'
             }}
             dangerouslySetInnerHTML={{ __html: svgHtml }}
           />
-        )}
-
-        {/* Floating Pan/Zoom Indicator */}
-        {!showSource && !error && (
-          <div className="arch-zoom-indicator">
-            <Move size={12} />
-            <span>Kéo chuột để di chuyển • Cuộn chuột để zoom • {Math.round(scale * 100)}%</span>
+        ) : (
+          <div className="arch-loading-box">
+            <Workflow className="animate-spin" size={28} />
+            <span>Đang nạp sơ đồ kiến trúc...</span>
           </div>
         )}
       </div>
+
+      {/* Raw Source Code Overlay Modal */}
+      {showSource && (
+        <div className="arch-source-overlay" onClick={() => setShowSource(false)}>
+          <div className="arch-source-card" onClick={e => e.stopPropagation()}>
+            <div className="arch-source-header">
+              <h4>Mã nguồn Mermaid DSL</h4>
+              <div className="arch-source-actions">
+                <button
+                  type="button"
+                  className="btn-copy-code"
+                  onClick={handleCopySource}
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{copied ? 'Đã sao chép' : 'Sao chép'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn-close-source"
+                  onClick={() => setShowSource(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <pre className="arch-source-code">{diagramCode}</pre>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
