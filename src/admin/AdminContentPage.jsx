@@ -933,20 +933,20 @@ export function AdminContentPage() {
 
   // ================= 3. STANDARD DATA TABLE LIST VIEW =================
   return (
-    <div className="admin-content-page">
+    <div className="admin-page">
       {/* Top Header */}
-      <div className="admin-page-header">
+      <div className="admin-heading">
         <div>
-          <span className="admin-eyebrow">QUẢN TRỊ NỘI DUNG</span>
-          <h1 className="admin-title">{config.title}</h1>
-          <p className="admin-description">
+          <span className="admin-badge-category">QUẢN TRỊ NỘI DUNG</span>
+          <h1>{config.title}</h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--adm-text-sub)' }}>
             {config.single
               ? 'Quản lý thông tin profile, học vấn và giới thiệu bản thân hiển thị trên portfolio'
               : `Quản lý, tìm kiếm và cập nhật dữ liệu ${config.title.toLowerCase()} trong hệ thống`}
           </p>
         </div>
 
-        <div className="admin-header-actions">
+        <div className="admin-heading-actions">
           {/* Refresh Button */}
           <button
             type="button"
@@ -1201,8 +1201,8 @@ export function AdminContentPage() {
         </div>
       ) : (
         <div className="admin-table-container">
-          <div className="admin-table-scroll">
-            <table className="admin-data-table">
+          <div className="admin-table-wrap">
+            <table>
               <thead>
                 <tr>
                   <th style={{ width: 60, textAlign: 'center' }}>STT</th>

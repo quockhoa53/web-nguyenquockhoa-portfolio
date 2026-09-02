@@ -9891,29 +9891,53 @@ button {
 /* ================= FULL-PAGE ADMIN EDITOR & DETAIL LAYOUTS ================= */
 .admin-fullpage-editor-layout,
 .admin-fullpage-detail-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  animation: fadeIn 0.2s ease-out;
-  padding-bottom: 40px;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 999999 !important;
+  background: var(--adm-bg, #f8fafc) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow-y: auto !important;
+  padding: 0 !important;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.dark .admin-fullpage-editor-layout,
+.dark .admin-fullpage-detail-layout {
+  background: #090e1a !important;
 }
 
 .admin-fullpage-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  background: var(--adm-surface, #ffffff);
-  border: 1px solid var(--adm-border, #e2e8f0);
-  border-radius: 16px;
-  box-shadow: var(--adm-shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.04));
+  padding: 0 28px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   gap: 16px;
-  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .dark .admin-fullpage-header {
   background: #0f172a;
-  border-color: rgba(255, 255, 255, 0.08);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.admin-fullpage-body {
+  flex: 1;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 .fullpage-header-left {
