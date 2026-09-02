@@ -1,5 +1,4 @@
 import { Editor } from '@tinymce/tinymce-react'
-import { Workflow } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { ArchitectureStudioModal } from './components/ArchitectureStudioModal'
 
@@ -101,19 +100,6 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
 
   return (
     <div className="rich-editor-shell">
-      {/* Quick Architecture Studio Action Bar */}
-      <div className="rich-editor-top-tools">
-        <button
-          type="button"
-          className="btn-open-arch-studio"
-          onClick={openStudio}
-          title="Mở trình thiết kế sơ đồ và chèn chính xác tại vị trí con trỏ chuột"
-        >
-          <Workflow size={15} />
-          <span>🏛️ Mở Architecture Studio IDE (Chèn Sơ Đồ Tại Vị Trí Con Trỏ)</span>
-        </button>
-      </div>
-
       <Editor
         apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
         onInit={(_evt, editor) => (editorRef.current = editor)}
