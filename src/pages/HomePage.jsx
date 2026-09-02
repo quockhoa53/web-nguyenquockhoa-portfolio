@@ -1,34 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, BriefcaseBusiness, Code2, Database, Download, Layers3, Server, Sparkles } from 'lucide-react'
+import { ArrowRight, BriefcaseBusiness, Download } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { CardsSkeleton, HeroSkeleton } from '../components/common/Skeletons'
 import { TiltCard } from '../components/common/TiltCard'
+import { SkillsCategoryGrid } from '../components/portfolio/SkillsCategoryGrid'
 import { useApiResource } from '../hooks/useApiResource'
 import { getProfile, getProjects, getSkills } from '../services/portfolioApi'
 import { FrontendProfileEditor } from '../admin/FrontendProfileEditor'
-
-const skillGroups = [
-  [Code2, 'Backend & Architecture'],
-  [Database, 'Database'],
-  [Layers3, 'Data Processing'],
-  [Sparkles, 'AI & Tools'],
-]
-
-function getCategorySkills(allSkills, groupTitle) {
-  if (!Array.isArray(allSkills)) return []
-  
-  const titleLower = groupTitle.trim().toLowerCase()
-  return allSkills
-    .filter(s => {
-      if (!s || !s.category) return false
-      const catLower = s.category.trim().toLowerCase()
-      return catLower === titleLower
-    })
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-    .map(s => s.name)
-    .filter(Boolean)
-    .slice(0, 10)
-}
 
 export function HomePage() {
   const profileState = useApiResource(getProfile)
@@ -101,30 +79,7 @@ export function HomePage() {
           {skillsState.isLoading || skillsState.error ? (
             <CardsSkeleton count={4} />
           ) : (
-            <div className="skill-grid">
-              {skillGroups.map(([Icon, title]) => {
-                const list = getCategorySkills(skillsState.data, title)
-                return (
-                  <TiltCard className="skill-panel reveal" key={title}>
-                    <div>
-                      <Icon />
-                      <h3>{title}</h3>
-                    </div>
-                    <ul>
-                      {list.length === 0 ? (
-                        <li style={{ color: '#94a3b8', fontStyle: 'italic', listStyle: 'none' }}>
-                          Chưa có kỹ năng
-                        </li>
-                      ) : (
-                        list.map((skillName, i) => (
-                          <li key={skillName + i}>{skillName}</li>
-                        ))
-                      )}
-                    </ul>
-                  </TiltCard>
-                )
-              })}
-            </div>
+            <SkillsCategoryGrid skills={skillsState.data} />
           )}
         </div>
       </section>
