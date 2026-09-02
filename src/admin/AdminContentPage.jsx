@@ -33,7 +33,8 @@ import {
   Save,
   CheckCircle2,
   Clock,
-  Globe
+  Globe,
+  Star
 } from 'lucide-react'
 import { useToast } from '../components/common/ToastContext'
 import { ArchitectureStudioModal } from './components/ArchitectureStudioModal'
@@ -48,6 +49,8 @@ import {
   getAdminContacts,
   getAdminGuests,
   getAdminLikes,
+  getAdminProfiles,
+  publishAdminProfile,
   getAdminWorkItems,
   moderateComment,
   updateAdminItem,
@@ -87,10 +90,11 @@ const configs = {
   likes: { title: 'Lượt Yêu Thích', load: getAdminLikes, readonly: true },
   profile: {
     title: 'Hồ Sơ & Thông Tin Cá Nhân',
-    single: true,
-    load: getProfile,
-    resource: 'profile',
+    modal: false,
+    load: getAdminProfiles,
+    resource: 'profiles',
     fields: [
+      ['versionName', 'Tên phiên bản hồ sơ (vd: Software Engineer, Lead Developer, AI Specialist...)'],
       ['fullName', 'Họ và tên'],
       ['headline', 'Chức danh'],
       ['email', 'Email liên hệ', 'email'],
@@ -100,6 +104,7 @@ const configs = {
       ['facebookUrl', 'Link Facebook (URL)'],
       ['githubUrl', 'Link GitHub (URL)'],
       ['linkedinUrl', 'Link LinkedIn (URL)'],
+      ['isPublished', 'Đặt làm hồ sơ chính thức hiển thị ngoài trang chủ Portfolio', 'checkbox'],
       ['shortBio', 'Mô tả ngắn trên trang chủ', 'textarea'],
       ['education', 'Học vấn & Bằng cấp (JSON/Text)', 'textarea'],
       ['bio', 'Nội dung chi tiết Profile', 'rich']
@@ -107,6 +112,7 @@ const configs = {
   },
   skills: {
     title: 'Năng Lực Kỹ Thuật',
+    modal: true,
     load: getSkills,
     resource: 'skills',
     fields: [
@@ -118,6 +124,7 @@ const configs = {
   },
   experiences: {
     title: 'Kinh Nghiệm Làm Việc',
+    modal: false,
     load: getExperiences,
     resource: 'experiences',
     fields: [
@@ -131,6 +138,7 @@ const configs = {
   },
   projects: {
     title: 'Dự Án Tiêu Biểu',
+    modal: false,
     load: getProjects,
     resource: 'projects',
     fields: [
@@ -146,17 +154,19 @@ const configs = {
   },
   categories: {
     title: 'Danh Mục Kiến Thức',
+    modal: true,
     load: getKnowledgeCategories,
     resource: 'knowledge/categories',
     fields: [
       ['name', 'Tên danh mục'],
       ['slug', 'Slug định danh URL (Tùy chọn)'],
       ['displayOrder', 'Thứ tự hiển thị', 'number'],
-      ['description', 'Mô tả danh mục', 'rich']
+      ['description', 'Mô tả danh mục', 'textarea']
     ]
   },
   articles: {
     title: 'Bài Viết Kiến Thức',
+    modal: false,
     load: getAdminArticles,
     resource: 'knowledge/articles',
     fields: [
@@ -171,6 +181,7 @@ const configs = {
   },
   'work-items': {
     title: 'Quá Trình Làm Việc',
+    modal: false,
     load: getAdminWorkItems,
     resource: 'work-items',
     fields: [
@@ -188,6 +199,7 @@ const configs = {
   },
   'ai-facts': {
     title: 'Bộ Nhớ AI (AI Persona Facts)',
+    modal: true,
     load: getAdminAiFacts,
     resource: 'ai-facts',
     fields: [
@@ -201,14 +213,6 @@ const configs = {
   comments: { title: 'Kiểm Duyệt Bình Luận', load: getAdminComments, readonly: true },
   contacts: { title: 'Tin Nhắn Khách Hàng', load: getAdminContacts, readonly: true },
   guests: { title: 'Khách Truy Cập', load: getAdminGuests, readonly: true }
-}
-
-function renderCellText(val) {
-  if (val === null || val === undefined) return ''
-  if (typeof val === 'object') {
-    return val.name || val.title || val.slug || val.displayName || String(val.id || '')
-  }
-  return String(val)
 }
 
 export function AdminContentPage() {
@@ -302,6 +306,17 @@ export function AdminContentPage() {
     })
   }
 
+  async function handlePublishProfile(id) {
+    try {
+      await publishAdminProfile(id)
+      setItems(prev => prev.map(p => ({ ...p, isPublished: p.id === id })))
+      toast.success('Đã xuất bản phiên bản hồ sơ này ra ngoài trang chủ Portfolio!')
+      load()
+    } catch (err) {
+      toast.error('Không thể xuất bản hồ sơ: ' + (err.message || 'Lỗi server'))
+    }
+  }
+
   async function handleTestMail() {
     setTestingMail(true)
     try {
@@ -329,12 +344,8 @@ export function AdminContentPage() {
       const data = await config.load()
       if (config.single) {
         setItems(data ? [data] : [])
-        // Automatically open profile in full page editor
-        if (section === 'profile' && data) {
-          setEditing(data)
-        }
       } else {
-        setItems(Array.isArray(data) ? data : [])
+        setItems(Array.isArray(data) ? data : (data ? [data] : []))
       }
       if (isManualRefresh) {
         toast.success(`Đã làm mới danh sách ${config.title}!`)
@@ -390,7 +401,11 @@ export function AdminContentPage() {
       if (sortBy === 'ORDER') {
         return (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
       }
-      // Default: If displayOrder exists use it, otherwise newest first
+      // Default: If isPublished is available, place published first
+      if (a.isPublished !== undefined && b.isPublished !== undefined) {
+        if (a.isPublished && !b.isPublished) return -1
+        if (!a.isPublished && b.isPublished) return 1
+      }
       if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
         return a.displayOrder - b.displayOrder
       }
@@ -411,10 +426,29 @@ export function AdminContentPage() {
   }, [search, categoryFilter, sortBy])
 
   function handleOpenCreate() {
-    if (config.single) {
-      setEditing(items[0] || {})
+    if (section === 'profile') {
+      setEditing({
+        versionName: `Phiên bản #${items.length + 1}`,
+        fullName: items[0]?.fullName || 'Nguyễn Quốc Khoa',
+        headline: items[0]?.headline || 'Software Engineer',
+        email: items[0]?.email || 'hello@example.com',
+        phone: items[0]?.phone || '',
+        location: items[0]?.location || '',
+        avatarUrl: items[0]?.avatarUrl || '',
+        facebookUrl: items[0]?.facebookUrl || '',
+        githubUrl: items[0]?.githubUrl || '',
+        linkedinUrl: items[0]?.linkedinUrl || '',
+        isPublished: false,
+        shortBio: items[0]?.shortBio || '',
+        education: items[0]?.education || '',
+        bio: items[0]?.bio || ''
+      })
     } else if (section === 'skills') {
       setEditing({ category: SKILL_CATEGORIES[0], proficiency: 85, displayOrder: items.length + 1 })
+    } else if (section === 'categories') {
+      setEditing({ name: '', slug: '', displayOrder: items.length + 1, description: '' })
+    } else if (section === 'ai-facts') {
+      setEditing({ category: AI_FACT_CATEGORIES[0], title: '', displayOrder: items.length + 1, isActive: true, content: '' })
     } else if (section === 'articles') {
       setEditing({
         categoryId: categoriesList[0]?.id || 1,
@@ -438,11 +472,7 @@ export function AdminContentPage() {
 
     setIsSaving(true)
     try {
-      if (config.single) {
-        const updated = await updateProfile(editing)
-        setItems([updated || editing])
-        toast.success('Cập nhật Thông tin Profile thành công!')
-      } else if (editing.id) {
+      if (editing.id) {
         const updated = await updateAdminItem(config.resource, editing.id, editing)
         // Instant optimistic local update
         setItems(prev => prev.map(i => i.id === editing.id ? { ...i, ...editing, ...(updated || {}) } : i))
@@ -485,8 +515,122 @@ export function AdminContentPage() {
     }
   }
 
-  // ================= 1. FULL-PAGE DETAIL VIEW =================
+  // ================= 1. DETAIL VIEW =================
   if (viewingItem) {
+    const rawDetailStatus = viewingItem.status || (viewingItem.isPublished !== undefined ? (viewingItem.isPublished ? 'PUBLISHED' : 'DRAFT') : (viewingItem.published === false ? 'DRAFT' : (viewingItem.isActive === false ? 'INACTIVE' : 'ACTIVE')))
+
+    // 1A. COMPACT MODAL DETAIL VIEW (For skills, categories, ai-facts)
+    if (config.modal) {
+      return (
+        <div className="admin-modal-backdrop" onClick={() => setViewingItem(null)}>
+          <div className="admin-modal-card-compact" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <span className="modal-tag">CHI TIẾT • {config.title.toUpperCase()}</span>
+                <h2>{viewingItem.name || viewingItem.title || config.title} {viewingItem.id && `#${viewingItem.id}`}</h2>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setViewingItem(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="detail-spec-list">
+                {viewingItem.id && (
+                  <div className="detail-spec-row">
+                    <span>Mã định danh (ID)</span>
+                    <b>#{viewingItem.id}</b>
+                  </div>
+                )}
+                {viewingItem.name && (
+                  <div className="detail-spec-row">
+                    <span>Tên</span>
+                    <b>{viewingItem.name}</b>
+                  </div>
+                )}
+                {viewingItem.title && (
+                  <div className="detail-spec-row">
+                    <span>Tiêu đề</span>
+                    <b>{viewingItem.title}</b>
+                  </div>
+                )}
+                {viewingItem.category && (
+                  <div className="detail-spec-row">
+                    <span>Phân loại nhóm</span>
+                    <b>{viewingItem.category}</b>
+                  </div>
+                )}
+                {viewingItem.proficiency !== undefined && (
+                  <div className="detail-spec-row">
+                    <span>Mức độ thông thạo</span>
+                    <b>{viewingItem.proficiency}%</b>
+                  </div>
+                )}
+                {viewingItem.displayOrder !== undefined && (
+                  <div className="detail-spec-row">
+                    <span>Thứ tự hiển thị</span>
+                    <b>{viewingItem.displayOrder}</b>
+                  </div>
+                )}
+                {viewingItem.slug && (
+                  <div className="detail-spec-row">
+                    <span>Slug URL</span>
+                    <b>{viewingItem.slug}</b>
+                  </div>
+                )}
+                <div className="detail-spec-row">
+                  <span>Trạng thái</span>
+                  <AdminStatusBadge status={rawDetailStatus} />
+                </div>
+              </div>
+
+              {viewingItem.content && (
+                <div>
+                  <label className="field-label-small" style={{ marginBottom: 6, display: 'block' }}>Nội dung chi tiết:</label>
+                  <div className="detail-summary-text">{viewingItem.content}</div>
+                </div>
+              )}
+
+              {viewingItem.description && (
+                <div>
+                  <label className="field-label-small" style={{ marginBottom: 6, display: 'block' }}>Mô tả:</label>
+                  <div className="detail-summary-text">{viewingItem.description}</div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="modal-btn-cancel"
+                onClick={() => setViewingItem(null)}
+              >
+                Đóng
+              </button>
+              {!config.readonly && (
+                <button
+                  type="button"
+                  className="admin-btn-primary"
+                  onClick={() => {
+                    setEditing({ ...viewingItem })
+                    setViewingItem(null)
+                  }}
+                >
+                  <Edit3 size={14} />
+                  <span>Chỉnh sửa</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // 1B. FULL-PAGE DETAIL VIEW (For profile, projects, articles, work-items, experiences)
     return (
       <div className="admin-fullpage-detail-layout">
         {/* Header Bar */}
@@ -503,11 +647,26 @@ export function AdminContentPage() {
 
             <div className="fullpage-title-wrap">
               <span className="fullpage-eyebrow">CHI TIẾT BẢN GHI • {config.title.toUpperCase()}</span>
-              <h2>{viewingItem.title || viewingItem.name || viewingItem.company || config.title} {viewingItem.id && `#${viewingItem.id}`}</h2>
+              <h2>{viewingItem.versionName || viewingItem.title || viewingItem.name || viewingItem.company || viewingItem.fullName || config.title} {viewingItem.id && `#${viewingItem.id}`}</h2>
             </div>
           </div>
 
           <div className="fullpage-header-right">
+            {section === 'profile' && !viewingItem.isPublished && (
+              <button
+                type="button"
+                className="admin-btn-secondary"
+                style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.12))', borderColor: '#10b981', color: '#059669' }}
+                onClick={() => {
+                  handlePublishProfile(viewingItem.id)
+                  setViewingItem(prev => ({ ...prev, isPublished: true }))
+                }}
+              >
+                <Star size={15} fill="#10b981" color="#10b981" />
+                <span>Đặt làm Profile chính thức</span>
+              </button>
+            )}
+
             {!config.readonly && (
               <button
                 type="button"
@@ -539,13 +698,23 @@ export function AdminContentPage() {
                 </div>
               )}
 
-              {/* Summary */}
-              {viewingItem.summary && (
+              {/* Summary / Headline */}
+              {(viewingItem.summary || viewingItem.shortBio || viewingItem.headline) && (
                 <div className="admin-editor-card">
                   <h4 className="detail-card-heading">
-                    <FileText size={15} /> Tóm tắt ngắn gọn
+                    <FileText size={15} /> Tóm tắt / Chức danh
                   </h4>
-                  <p className="detail-summary-text">{viewingItem.summary}</p>
+                  <p className="detail-summary-text">{viewingItem.summary || viewingItem.shortBio || viewingItem.headline}</p>
+                </div>
+              )}
+
+              {/* Education */}
+              {viewingItem.education && (
+                <div className="admin-editor-card">
+                  <h4 className="detail-card-heading">
+                    <Calendar size={15} /> Học vấn &amp; Bằng cấp
+                  </h4>
+                  <p className="detail-summary-text">{viewingItem.education}</p>
                 </div>
               )}
 
@@ -581,8 +750,36 @@ export function AdminContentPage() {
 
                   <div className="detail-spec-row">
                     <span>Trạng thái</span>
-                    <AdminStatusBadge status={viewingItem.status || (viewingItem.published === false ? 'DRAFT' : 'ACTIVE')} />
+                    <AdminStatusBadge status={rawDetailStatus} />
                   </div>
+
+                  {viewingItem.fullName && (
+                    <div className="detail-spec-row">
+                      <span>Họ và tên</span>
+                      <b>{viewingItem.fullName}</b>
+                    </div>
+                  )}
+
+                  {viewingItem.email && (
+                    <div className="detail-spec-row">
+                      <span>Email</span>
+                      <b>{viewingItem.email}</b>
+                    </div>
+                  )}
+
+                  {viewingItem.phone && (
+                    <div className="detail-spec-row">
+                      <span>Số điện thoại</span>
+                      <b>{viewingItem.phone}</b>
+                    </div>
+                  )}
+
+                  {viewingItem.location && (
+                    <div className="detail-spec-row">
+                      <span>Địa chỉ</span>
+                      <b>{viewingItem.location}</b>
+                    </div>
+                  )}
 
                   {(viewingItem.category || viewingItem.categoryId) && (
                     <div className="detail-spec-row">
@@ -611,20 +808,6 @@ export function AdminContentPage() {
                       <b>{viewingItem.displayOrder}</b>
                     </div>
                   )}
-
-                  {viewingItem.createdAt && (
-                    <div className="detail-spec-row">
-                      <span>Ngày tạo</span>
-                      <small>{new Date(viewingItem.createdAt).toLocaleString('vi-VN')}</small>
-                    </div>
-                  )}
-
-                  {viewingItem.updatedAt && (
-                    <div className="detail-spec-row">
-                      <span>Cập nhật cuối</span>
-                      <small>{new Date(viewingItem.updatedAt).toLocaleString('vi-VN')}</small>
-                    </div>
-                  )}
                 </div>
 
                 {/* External Links */}
@@ -644,6 +827,21 @@ export function AdminContentPage() {
                           <Link2 size={13} /> Source Code <ExternalLink size={11} />
                         </a>
                       )}
+                      {viewingItem.githubUrl && (
+                        <a href={viewingItem.githubUrl} target="_blank" rel="noreferrer" className="detail-ext-link">
+                          <Globe size={13} /> GitHub Profile <ExternalLink size={11} />
+                        </a>
+                      )}
+                      {viewingItem.linkedinUrl && (
+                        <a href={viewingItem.linkedinUrl} target="_blank" rel="noreferrer" className="detail-ext-link">
+                          <Globe size={13} /> LinkedIn Profile <ExternalLink size={11} />
+                        </a>
+                      )}
+                      {viewingItem.facebookUrl && (
+                        <a href={viewingItem.facebookUrl} target="_blank" rel="noreferrer" className="detail-ext-link">
+                          <Globe size={13} /> Facebook Profile <ExternalLink size={11} />
+                        </a>
+                      )}
                     </div>
                   </div>
                 )}
@@ -655,9 +853,136 @@ export function AdminContentPage() {
     )
   }
 
-  // ================= 2. FULL-PAGE EDITOR VIEW =================
+  // ================= 2. EDITOR VIEW =================
   if (editing) {
-    const mainFields = config.fields.filter(([_, __, type]) => type === 'rich' || type === 'textarea' || _ === 'title' || _ === 'fullName' || _ === 'name' || _ === 'company')
+    // 2A. COMPACT MODAL EDITOR (For skills, categories, ai-facts)
+    if (config.modal) {
+      return (
+        <div className="admin-modal-backdrop" onClick={() => !isSaving && setEditing(null)}>
+          <div className="admin-modal-card-compact" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <span className="modal-tag">{config.title.toUpperCase()}</span>
+                <h2>{editing.id ? 'Cập Nhật' : 'Thêm Mới'} {config.title}</h2>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setEditing(null)}
+                disabled={isSaving}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={save}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {config.fields.map(([key, label, type = 'text', options, uploadFolder]) => (
+                  <div key={key} className="form-field-group">
+                    {type !== 'checkbox' && (
+                      <label className="field-label">{label}</label>
+                    )}
+
+                    {type === 'image_upload' ? (
+                      <AdminImageUpload
+                        label={label}
+                        value={editing[key] || ''}
+                        folder={uploadFolder || 'portfolio/images'}
+                        onChange={(url) => setEditing({ ...editing, [key]: url })}
+                      />
+                    ) : type === 'category_select' ? (
+                      <select
+                        className="admin-select-input"
+                        value={editing.categoryId || (categoriesList[0]?.id ?? '')}
+                        onChange={e => setEditing({ ...editing, categoryId: Number(e.target.value) })}
+                      >
+                        {categoriesList.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    ) : type === 'select' ? (
+                      <select
+                        className="admin-select-input"
+                        value={editing[key] || options[0]}
+                        onChange={e => setEditing({ ...editing, [key]: e.target.value })}
+                      >
+                        {options.map(o => (
+                          <option key={o} value={o}>{o}</option>
+                        ))}
+                      </select>
+                    ) : type === 'checkbox' ? (
+                      <label className="admin-checkbox-card">
+                        <input
+                          type="checkbox"
+                          checked={!!editing[key]}
+                          onChange={e => setEditing({ ...editing, [key]: e.target.checked })}
+                        />
+                        <span className="checkbox-text">
+                          <strong>{label}</strong>
+                        </span>
+                      </label>
+                    ) : type === 'textarea' ? (
+                      <textarea
+                        className="admin-textarea-input"
+                        rows={4}
+                        placeholder={`Nhập ${label.toLowerCase()}...`}
+                        value={editing[key] || ''}
+                        onChange={e => setEditing({ ...editing, [key]: e.target.value })}
+                      />
+                    ) : (
+                      <input
+                        className="admin-text-input"
+                        type={type}
+                        placeholder={`Nhập ${label.toLowerCase()}...`}
+                        value={editing[key] ?? ''}
+                        onChange={e =>
+                          setEditing({
+                            ...editing,
+                            [key]: type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value
+                          })
+                        }
+                        required={key === 'name' || key === 'title'}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="modal-btn-cancel"
+                  onClick={() => setEditing(null)}
+                  disabled={isSaving}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="modal-btn-save"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="animate-spin" size={15} />
+                      <span>Đang lưu...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={15} />
+                      <span>{editing.id ? 'Lưu cập nhật' : 'Tạo mới'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )
+    }
+
+    // 2B. FULL-PAGE EDITOR (For profile, projects, articles, work-items, experiences)
+    const mainFields = config.fields.filter(([key, _, type]) => type === 'rich' || type === 'textarea' || key === 'title' || key === 'versionName' || key === 'fullName' || key === 'name' || key === 'company')
     const sideFields = config.fields.filter(([key, _, type]) => !mainFields.some(m => m[0] === key))
 
     return (
@@ -665,21 +990,19 @@ export function AdminContentPage() {
         {/* Header Action Bar */}
         <div className="admin-fullpage-header">
           <div className="fullpage-header-left">
-            {!config.single && (
-              <button
-                type="button"
-                className="btn-back-to-list"
-                onClick={() => setEditing(null)}
-                disabled={isSaving}
-              >
-                <ArrowLeft size={16} />
-                <span>Quay lại danh sách</span>
-              </button>
-            )}
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={() => setEditing(null)}
+              disabled={isSaving}
+            >
+              <ArrowLeft size={16} />
+              <span>Quay lại danh sách</span>
+            </button>
 
             <div className="fullpage-title-wrap">
               <span className="fullpage-eyebrow">
-                {config.single ? 'CÀI ĐẶT HỆ THỐNG' : 'SOẠN THẢO NỘI DUNG'} • {config.title.toUpperCase()}
+                SOẠN THẢO NỘI DUNG • {config.title.toUpperCase()}
               </span>
               <h2>
                 {editing.id ? 'Cập Nhật' : 'Thêm Mới'} {config.title} {editing.id ? `#${editing.id}` : ''}
@@ -688,16 +1011,14 @@ export function AdminContentPage() {
           </div>
 
           <div className="fullpage-header-right">
-            {!config.single && (
-              <button
-                type="button"
-                className="admin-btn-secondary"
-                disabled={isSaving}
-                onClick={() => setEditing(null)}
-              >
-                Hủy bỏ
-              </button>
-            )}
+            <button
+              type="button"
+              className="admin-btn-secondary"
+              disabled={isSaving}
+              onClick={() => setEditing(null)}
+            >
+              Hủy bỏ
+            </button>
 
             {/* Architecture Studio IDE Button in Editor Top Bar */}
             {['projects', 'articles', 'work-items'].includes(section) && (
@@ -744,7 +1065,7 @@ export function AdminContentPage() {
             {/* 1. Main Column (70% Width) */}
             <div className="admin-editor-main-col">
               {/* Primary Title / Name input */}
-              {config.fields.filter(([key]) => key === 'title' || key === 'fullName' || key === 'name' || key === 'company').map(([key, label, type = 'text']) => (
+              {config.fields.filter(([key]) => key === 'title' || key === 'versionName' || key === 'fullName' || key === 'name' || key === 'company').map(([key, label, type = 'text']) => (
                 <div key={key} className="admin-editor-card title-card">
                   <label className="field-label-large">
                     <span>{label}</span>
@@ -755,7 +1076,7 @@ export function AdminContentPage() {
                     placeholder={`Nhập ${label.toLowerCase()}...`}
                     value={editing[key] || ''}
                     onChange={e => setEditing({ ...editing, [key]: e.target.value })}
-                    required
+                    required={key === 'title' || key === 'fullName' || key === 'name' || key === 'company'}
                   />
                 </div>
               ))}
@@ -940,8 +1261,8 @@ export function AdminContentPage() {
           <span className="admin-badge-category">QUẢN TRỊ NỘI DUNG</span>
           <h1>{config.title}</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--adm-text-sub)' }}>
-            {config.single
-              ? 'Quản lý thông tin profile, học vấn và giới thiệu bản thân hiển thị trên portfolio'
+            {section === 'profile'
+              ? 'Quản lý các phiên bản Profile cá nhân (Chỉ phiên bản được Xuất bản/Publish sẽ hiển thị trên trang Portfolio ngoài client)'
               : `Quản lý, tìm kiếm và cập nhật dữ liệu ${config.title.toLowerCase()} trong hệ thống`}
           </p>
         </div>
@@ -976,7 +1297,7 @@ export function AdminContentPage() {
           {!config.readonly && (
             <button className="admin-btn-primary" onClick={handleOpenCreate}>
               <Plus size={16} />
-              <span>{config.single ? 'Chỉnh sửa hồ sơ' : 'Thêm mới'}</span>
+              <span>{section === 'profile' ? 'Tạo phiên bản Profile mới' : 'Thêm mới'}</span>
             </button>
           )}
         </div>
@@ -1170,19 +1491,17 @@ export function AdminContentPage() {
           )}
 
           {/* Sort By Dropdown */}
-          {!config.single && (
-            <div className="admin-filter-select-wrap">
-              <ArrowUpDown size={13} className="filter-icon" />
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-              >
-                <option value="DEFAULT">Sắp xếp: Mặc định</option>
-                <option value="NEWEST">Sắp xếp: Mới nhất trước</option>
-                <option value="ORDER">Sắp xếp: Theo thứ tự hiển thị</option>
-              </select>
-            </div>
-          )}
+          <div className="admin-filter-select-wrap">
+            <ArrowUpDown size={13} className="filter-icon" />
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+            >
+              <option value="DEFAULT">Sắp xếp: Mặc định</option>
+              <option value="NEWEST">Sắp xếp: Mới nhất trước</option>
+              <option value="ORDER">Sắp xếp: Theo thứ tự hiển thị</option>
+            </select>
+          </div>
         </div>
 
         <div className="admin-toolbar-right">
@@ -1206,10 +1525,10 @@ export function AdminContentPage() {
               <thead>
                 <tr>
                   <th style={{ width: 60, textAlign: 'center' }}>STT</th>
-                  <th>Nội dung chính</th>
-                  <th style={{ width: 180 }}>Thông tin phụ</th>
-                  <th style={{ width: 130, textAlign: 'center' }}>Trạng thái</th>
-                  <th style={{ width: 120, textAlign: 'center' }}>Thao tác</th>
+                  <th>{section === 'profile' ? 'Phiên bản Profile / Họ tên' : 'Nội dung chính'}</th>
+                  <th style={{ width: 220 }}>{section === 'profile' ? 'Liên hệ & Chức danh' : 'Thông tin phụ'}</th>
+                  <th style={{ width: 150, textAlign: 'center' }}>Trạng thái</th>
+                  <th style={{ width: 140, textAlign: 'center' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -1228,10 +1547,21 @@ export function AdminContentPage() {
                 ) : (
                   paginatedItems.map((item, index) => {
                     const stt = (currentPage - 1) * pageSize + index + 1
-                    const itemTitle = item.title || item.fullName || item.name || item.company || 'Bản ghi #' + item.id
-                    const itemSub = item.headline || item.role || item.position || item.summary || item.category || (item.email ? `Email: ${item.email}` : '')
-                    const itemInfo = item.technologies || item.category || (item.proficiency ? `Độ thông thạo: ${item.proficiency}%` : '') || (item.period ? `Thời gian: ${item.period}` : '') || (item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : '—')
-                    const rawStatus = item.status || (item.published === false ? 'DRAFT' : (item.isActive === false ? 'INACTIVE' : 'ACTIVE'))
+                    const itemTitle = section === 'profile'
+                      ? (item.versionName || `${item.fullName} - ${item.headline}`)
+                      : (item.title || item.fullName || item.name || item.company || 'Bản ghi #' + item.id)
+
+                    const itemSub = section === 'profile'
+                      ? `${item.fullName} • ${item.headline}`
+                      : (item.headline || item.role || item.position || item.summary || item.category || (item.email ? `Email: ${item.email}` : ''))
+
+                    const itemInfo = section === 'profile'
+                      ? `${item.email || ''} ${item.phone ? '• ' + item.phone : ''}`
+                      : (item.technologies || item.category || (item.proficiency ? `Độ thông thạo: ${item.proficiency}%` : '') || (item.period ? `Thời gian: ${item.period}` : '') || (item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : '—'))
+
+                    const rawStatus = section === 'profile'
+                      ? (item.isPublished ? 'PUBLISHED' : 'DRAFT')
+                      : (item.status || (item.published === false ? 'DRAFT' : (item.isActive === false ? 'INACTIVE' : 'ACTIVE')))
 
                     return (
                       <tr key={item.id || index} className="admin-table-row">
@@ -1242,6 +1572,23 @@ export function AdminContentPage() {
                           <div className="cell-title-wrap">
                             <strong className="cell-title">{itemTitle}</strong>
                             {item.id && <span className="cell-id-badge" title={`ID: ${item.id}`}>#{item.id}</span>}
+                            {section === 'profile' && item.isPublished && (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                  fontSize: 10.5,
+                                  fontWeight: 800,
+                                  color: '#059669',
+                                  background: 'rgba(16, 185, 129, 0.12)',
+                                  padding: '2px 7px',
+                                  borderRadius: 99
+                                }}
+                              >
+                                🌟 Đang hiển thị Live
+                              </span>
+                            )}
                           </div>
                           {itemSub && <span className="cell-subtitle">{itemSub}</span>}
                         </td>
@@ -1253,6 +1600,18 @@ export function AdminContentPage() {
                         </td>
                         <td className="action-cell" style={{ textAlign: 'center' }}>
                           <div className="row-actions">
+                            {/* Star / Publish Profile Quick Button */}
+                            {section === 'profile' && !item.isPublished && (
+                              <button
+                                type="button"
+                                className="row-btn approve"
+                                title="Đặt làm hồ sơ chính thức hiển thị ngoài Portfolio"
+                                onClick={() => handlePublishProfile(item.id)}
+                              >
+                                <Star size={14} />
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               className="row-btn view"
@@ -1261,6 +1620,7 @@ export function AdminContentPage() {
                             >
                               <Eye size={14} />
                             </button>
+
                             {section === 'comments' ? (
                               <>
                                 <button className="row-btn approve" title="Phê duyệt bình luận" onClick={() => moderate(item, 'APPROVED')}>
@@ -1276,11 +1636,9 @@ export function AdminContentPage() {
                                   <button className="row-btn edit" title="Chỉnh sửa" onClick={() => setEditing({ ...item })}>
                                     <Edit3 size={14} />
                                   </button>
-                                  {!config.single && (
-                                    <button className="row-btn danger" title="Xóa bản ghi" onClick={() => remove(item.id)}>
-                                      <Trash2 size={14} />
-                                    </button>
-                                  )}
+                                  <button className="row-btn danger" title="Xóa bản ghi" onClick={() => remove(item.id)}>
+                                    <Trash2 size={14} />
+                                  </button>
                                 </>
                               )
                             )}
@@ -1295,19 +1653,17 @@ export function AdminContentPage() {
           </div>
 
           {/* Pagination */}
-          {!config.single && (
-            <AdminPagination
-              currentPage={currentPage}
-              totalItems={sortedAndFiltered.length}
-              pageSize={pageSize}
-              pageSizeOptions={[10, 25, 50, 100]}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(newSize) => {
-                setPageSize(newSize)
-                setCurrentPage(1)
-              }}
-            />
-          )}
+          <AdminPagination
+            currentPage={currentPage}
+            totalItems={sortedAndFiltered.length}
+            pageSize={pageSize}
+            pageSizeOptions={[10, 25, 50, 100]}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize)
+              setCurrentPage(1)
+            }}
+          />
         </div>
       )}
     </div>
