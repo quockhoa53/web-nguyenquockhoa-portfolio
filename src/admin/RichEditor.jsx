@@ -125,6 +125,13 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
           promotion: false,
           branding: false,
           statusbar: true,
+          paste_preprocess: (plugin, args) => {
+            if (args.content) {
+              // Strip inline background colors copied from ChatGPT/Claude dark mode
+              args.content = args.content
+                .replace(/background(-color)?:\s*(#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|rgba\([^)]+\)|hsl\([^)]+\));?/gi, '')
+            }
+          },
           setup: (editor) => {
             editor.ui.registry.addButton('archstudio', {
               text: '🏛️ Chèn Sơ Đồ',
