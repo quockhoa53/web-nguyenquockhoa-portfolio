@@ -9888,6 +9888,54 @@ button {
   box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
 }
 
+/* --- Empty Table State --- */
+.empty-table-cell,
+.admin-empty-table-cell {
+  text-align: center !important;
+  padding: 56px 24px !important;
+  color: var(--adm-text-muted);
+}
+
+.empty-table-wrap {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  gap: 8px;
+  width: 100%;
+}
+
+.empty-icon {
+  color: var(--adm-text-muted, #94a3b8);
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+.empty-title {
+  margin: 0 !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: var(--adm-text, #0f172a) !important;
+  text-align: center !important;
+}
+
+.dark .empty-title {
+  color: #f8fafc !important;
+}
+
+.empty-desc {
+  margin: 0 !important;
+  font-size: 12.5px !important;
+  color: var(--adm-text-sub, #64748b) !important;
+  text-align: center !important;
+  max-width: 420px;
+}
+
+.dark .empty-desc {
+  color: #94a3b8 !important;
+}
+
 /* --- Compact Admin Modal Dialog --- */
 .admin-modal-card-compact {
   width: 100%;
