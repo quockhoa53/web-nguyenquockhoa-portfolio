@@ -89,7 +89,7 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
           resize: 'both',
           menubar: 'file edit view insert format tools table help',
           plugins: 'advlist anchor autolink charmap code codesample emoticons fullscreen image link lists media preview searchreplace table visualblocks wordcount',
-          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table codesample | charmap emoticons | searchreplace visualblocks | removeformat preview code fullscreen',
+          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table codesample archstudio | charmap emoticons | searchreplace visualblocks | removeformat preview code fullscreen',
           toolbar_mode: 'sliding',
           contextmenu: 'link image table',
           image_advtab: true,
@@ -103,6 +103,18 @@ export function RichEditor({ value, onChange, minHeight = 620 }) {
           promotion: false,
           branding: false,
           statusbar: true,
+          setup: (editor) => {
+            editor.ui.registry.addButton('archstudio', {
+              text: '🏛️ Chèn Sơ Đồ',
+              tooltip: 'Mở Architecture Studio để vẽ và chèn sơ đồ kiến trúc ngay tại vị trí con trỏ',
+              onAction: () => setStudioOpen(true),
+            })
+            editor.ui.registry.addMenuItem('archstudio_menu', {
+              text: '🏛️ Sơ Đồ Kiến Trúc Hệ Thống (Mermaid)',
+              icon: 'code-sample',
+              onAction: () => setStudioOpen(true),
+            })
+          }
         }}
       />
 
