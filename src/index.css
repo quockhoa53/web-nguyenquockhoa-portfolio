@@ -5418,30 +5418,45 @@ button {
 }
 
 .hero-summary-box {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-left: 4px solid #38bdf8;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-left: 4px solid #0284c7;
   border-radius: 14px;
   padding: 18px 22px;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
 }
 
 .hero-summary-box p {
-  color: #e2e8f0;
+  color: var(--text, #1e293b);
   font-size: 15px;
   line-height: 1.7;
   margin: 0;
 }
 
+.dark .hero-summary-box {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(56, 189, 248, 0.25);
+  border-left-color: #38bdf8;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.dark .hero-summary-box p {
+  color: #e2e8f0;
+}
+
 /* Detail Content Section */
 .detail-content-section {
   padding: 55px 0 90px;
-  background: linear-gradient(180deg, #050814 0%, #080d1a 50%, #03060f 100%);
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
   position: relative;
 }
 
-.detail-content-section::before {
+.dark .detail-content-section {
+  background: linear-gradient(180deg, #050814 0%, #080d1a 50%, #03060f 100%);
+}
+
+.dark .detail-content-section::before {
   content: "";
   position: absolute;
   top: 0;
@@ -5457,17 +5472,24 @@ button {
 .prose-card-wide,
 .detail-main-article {
   position: relative;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(10, 15, 29, 0.95) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
   border-radius: 24px;
-  padding: 44px 48px;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.06) inset;
-  backdrop-filter: blur(20px);
+  padding: 40px 44px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.04);
   overflow: hidden;
 }
 
-.prose-card-wide::before,
-.detail-main-article::before {
+.dark .prose-card-wide,
+.dark .detail-main-article {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(10, 15, 29, 0.95) 100%);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.06) inset;
+  backdrop-filter: blur(20px);
+}
+
+.dark .prose-card-wide::before,
+.dark .detail-main-article::before {
   content: "";
   position: absolute;
   top: 0;
@@ -5483,7 +5505,11 @@ button {
   gap: 10px;
   padding-bottom: 20px;
   margin-bottom: 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.dark .detail-article-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .detail-article-header h2,
@@ -5491,14 +5517,103 @@ button {
   font-size: 22px;
   font-weight: 800;
   margin: 0;
+  color: var(--text, #0f172a);
+}
+
+.dark .detail-article-header h2,
+.dark .detail-article-header h3 {
   color: #ffffff;
 }
 
 .sparkle-accent {
   width: 22px;
   height: 22px;
-  color: #38bdf8;
+  color: #059669;
   flex-shrink: 0;
+}
+
+.dark .sparkle-accent {
+  color: #38bdf8;
+}
+
+/* Sidebar Table of Contents */
+.sidebar-toc-block {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  margin-bottom: 6px;
+}
+
+.dark .sidebar-toc-block {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-toc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.sidebar-toc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.sidebar-toc-item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  transform: translateX(3px);
+}
+
+.sidebar-toc-item.active {
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 700;
+}
+
+.dark .sidebar-toc-item {
+  color: #94a3b8;
+}
+
+.dark .sidebar-toc-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.dark .sidebar-toc-item.active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.toc-bullet {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  background: #e2e8f0;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.sidebar-toc-item.active .toc-bullet {
+  background: #6366f1;
+  color: #ffffff;
+}
+
+.dark .toc-bullet {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
 }
 
 /* ================= HIGH-CONTRAST NEON SAAS TABLES ================= */

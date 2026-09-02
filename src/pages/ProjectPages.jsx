@@ -358,7 +358,7 @@ export function ProjectDetailPage() {
           <article className="detail-main-article">
             <div className="detail-article-header">
               <Sparkles className="sparkle-accent" />
-              <h2 className="font-display text-xl md:text-2xl font-bold text-white">
+              <h2 className="font-display text-xl md:text-2xl font-bold">
                 Chi tiết kiến trúc &amp; Giải pháp kỹ thuật
               </h2>
             </div>
@@ -376,8 +376,8 @@ export function ProjectDetailPage() {
             {tocItems.length > 0 && (
               <div className="sidebar-toc-block">
                 <div className="sidebar-card-header">
-                  <List size={16} className="text-emerald-400" />
-                  <h4 className="font-display text-sm font-bold text-white">Mục lục dự án</h4>
+                  <List size={16} className="text-emerald-500" />
+                  <h4 className="font-display text-sm font-bold">Mục lục dự án</h4>
                 </div>
                 <nav className="sidebar-toc-list">
                   {tocItems.map((item, idx) => (
