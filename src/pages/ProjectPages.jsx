@@ -220,10 +220,11 @@ export function ProjectsPage() {
                             href={p.demoUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="btn-card-icon"
-                            title="Xem Demo"
+                            className="btn-card-demo-live"
+                            title="Xem Live Demo trực tiếp"
                           >
-                            <ExternalLink style={{ width: 15, height: 15 }} />
+                            <ExternalLink style={{ width: 14, height: 14 }} />
+                            <span>Xem Live</span>
                           </a>
                         )}
                         {p.sourceUrl && (
@@ -431,6 +432,20 @@ export function ProjectDetailPage() {
                     </span>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {data.demoUrl && (
+              <div className="sidebar-live-demo-box">
+                <a
+                  href={data.demoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn success full-width"
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: '800' }}
+                >
+                  <ExternalLink style={{ width: 16, height: 16 }} /> 🌐 Xem Live Demo
+                </a>
               </div>
             )}
 

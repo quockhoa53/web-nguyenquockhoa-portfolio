@@ -9843,3 +9843,47 @@ button {
   box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4);
   background: linear-gradient(135deg, #0369a1, #4338ca);
 }
+
+/* Prominent Live Demo Buttons on Cards and Sidebar */
+.btn-card-demo-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff !important;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+  transition: all 0.15s;
+}
+
+.btn-card-demo-live:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+  color: #ffffff !important;
+}
+
+.sidebar-live-demo-box {
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+.sidebar-live-demo-box .btn.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff !important;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transition: all 0.2s;
+}
+
+.sidebar-live-demo-box .btn.success:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+}

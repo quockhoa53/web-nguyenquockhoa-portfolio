@@ -543,6 +543,13 @@ export function ArchitectureStudioModal({
             >
               <Code2 size={13} /> Soạn Code
             </button>
+            <button
+              type="button"
+              className={`mode-pill-btn ${activeTab === 'preview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('preview')}
+            >
+              <Eye size={13} /> Xem Live Demo
+            </button>
           </div>
         </div>
 
@@ -837,6 +844,18 @@ export function ArchitectureStudioModal({
                 allowFullscreen={false}
               />
             </div>
+          </div>
+        )}
+
+        {activeTab === 'preview' && (
+          <div className="full-preview-tab-layout">
+            <ArchitectureViewer
+              diagramCode={rawCode}
+              title={title}
+              defaultHeight="100%"
+              allowFullscreen={true}
+              className="arch-studio-main-canvas"
+            />
           </div>
         )}
       </div>
