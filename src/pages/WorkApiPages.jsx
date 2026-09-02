@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { PageHero } from '../components/common/PageHero'
 import { LinesSkeleton } from '../components/common/Skeletons'
 import { TiltCard } from '../components/common/TiltCard'
+import { InteractiveHtmlContent } from '../components/common/InteractiveHtmlContent'
 import { useApiResource } from '../hooks/useApiResource'
 import { getWorkItem, getWorkItems } from '../services/portfolioApi'
 
@@ -195,9 +196,9 @@ export function WorkDetailPage() {
               <h3>Nội dung & Trách nhiệm thực hiện</h3>
             </div>
             
-            <div
+            <InteractiveHtmlContent
               className="prose-content-body rich-content"
-              dangerouslySetInnerHTML={{ __html: item.content || item.summary }}
+              html={item.content || item.summary}
             />
           </article>
 

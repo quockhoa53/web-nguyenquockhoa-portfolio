@@ -22,9 +22,11 @@ import {
   ThumbsUp,
   ThumbsDown,
   MessageSquare,
-  TrendingUp
+  TrendingUp,
+  Workflow
 } from 'lucide-react'
 import { useToast } from '../components/common/ToastContext'
+import { ArchitectureStudioModal } from './components/ArchitectureStudioModal'
 import {
   createAdminItem,
   deleteAdminItem,
@@ -214,6 +216,7 @@ export function AdminContentPage() {
   const [testingMail, setTestingMail] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [studioOpen, setStudioOpen] = useState(false)
   const toast = useToast()
 
   const DEFAULT_AI_INSIGHTS = useMemo(() => ({
@@ -499,6 +502,24 @@ export function AdminContentPage() {
             >
               {testingMail ? <Loader2 className="animate-spin" size={14} /> : <Mail size={14} />}
               <span>{testingMail ? 'Đang gửi test...' : 'Test Gửi Email'}</span>
+            </button>
+          )}
+
+          {/* Architecture Studio IDE Button */}
+          {['projects', 'articles', 'work-items'].includes(section) && (
+            <button
+              type="button"
+              className="admin-btn-secondary"
+              onClick={() => setStudioOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(99, 102, 241, 0.12))',
+                borderColor: 'rgba(99, 102, 241, 0.3)',
+                color: '#4f46e5'
+              }}
+              title="Mở trình thiết kế và vẽ sơ đồ kiến trúc hệ thống (Mermaid IDE)"
+            >
+              <Workflow size={15} />
+              <span>Architecture Studio</span>
             </button>
           )}
 
@@ -1153,6 +1174,10 @@ export function AdminContentPage() {
           </div>
         </div>
       )}
+      <ArchitectureStudioModal
+        isOpen={studioOpen}
+        onClose={() => setStudioOpen(false)}
+      />
     </div>
   )
 }

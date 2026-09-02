@@ -19,6 +19,7 @@ import { Link, useParams } from 'react-router-dom'
 import { PageHero } from '../components/common/PageHero'
 import { CardsSkeleton, LinesSkeleton } from '../components/common/Skeletons'
 import { TiltCard } from '../components/common/TiltCard'
+import { InteractiveHtmlContent } from '../components/common/InteractiveHtmlContent'
 import { useApiResource } from '../hooks/useApiResource'
 import { getProject, getProjects } from '../services/portfolioApi'
 
@@ -364,9 +365,9 @@ export function ProjectDetailPage() {
             </div>
 
             {/* Dynamic Architecture Content */}
-            <div
+            <InteractiveHtmlContent
               className="prose-content-body rich-content"
-              dangerouslySetInnerHTML={{ __html: processedHtml }}
+              html={processedHtml}
             />
           </article>
 

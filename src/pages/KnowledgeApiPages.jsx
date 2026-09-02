@@ -5,6 +5,7 @@ import { PageHero } from '../components/common/PageHero'
 import { CardsSkeleton, LinesSkeleton } from '../components/common/Skeletons'
 import { TiltCard } from '../components/common/TiltCard'
 import { EngagementPanel } from '../features/engagement/EngagementPanel'
+import { InteractiveHtmlContent } from '../components/common/InteractiveHtmlContent'
 import { useApiResource } from '../hooks/useApiResource'
 import { getKnowledgeArticle, getKnowledgeArticles, getKnowledgeCategories } from '../services/portfolioApi'
 
@@ -190,9 +191,9 @@ export function KnowledgeDetailPage() {
       {/* Article Content */}
       <section className="section detail-content-section">
         <div className="content-shell" style={{ maxWidth: '1020px' }}>
-          <article
+          <InteractiveHtmlContent
             className="prose-card-wide rich-content"
-            dangerouslySetInnerHTML={{ __html: content || article.content }}
+            html={content || article.content}
           />
 
           {/* Engagement Panel: Likes & Comments */}
