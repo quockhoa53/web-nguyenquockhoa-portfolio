@@ -9978,13 +9978,24 @@ button {
   inset: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  z-index: 999999 !important;
+  z-index: 5000 !important;
   background: var(--adm-bg, #f8fafc) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow-y: auto !important;
   padding: 0 !important;
   animation: fadeIn 0.15s ease-out;
+}
+
+/* ================= TINYMCE AUXILIARY POPUP / DROPDOWN Z-INDEX FIX ================= */
+.tox-tinymce-aux,
+.tox-dialog-wrap,
+.tox-menu,
+.tox-pop,
+.tox-dialog,
+.tox-toolbar__overflow,
+div.tox.tox-tinymce-aux {
+  z-index: 100000 !important;
 }
 
 .dark .admin-fullpage-editor-layout,
