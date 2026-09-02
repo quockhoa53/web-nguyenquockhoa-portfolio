@@ -33,7 +33,17 @@ function extractCleanSummary(html = '', rawSummary = '') {
   if (rawSummary && rawSummary.trim()) {
     return rawSummary.trim()
   }
-  const text = (html || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim()
+  const text = (html || '')
+    .replace(/<pre[\s\S]*?<\/pre>/gi, '')
+    .replace(/<code[\s\S]*?<\/code>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]*>?/gm, ' ')
+    .replace(/graph\s+(TD|TB|BT|RL|LR)[\s\S]*?(?=\n\n|\r\n\r\n|$)/gi, '')
+    .replace(/flowchart\s+(TD|TB|BT|RL|LR)[\s\S]*?(?=\n\n|\r\n\r\n|$)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!text) return 'Xem thông tin chi tiết kiến trúc và giải pháp kỹ thuật của dự án.'
   if (text.length <= 180) return text
   const periodIndex = text.indexOf('.', 80)
   if (periodIndex !== -1 && periodIndex <= 220) {
@@ -194,7 +204,7 @@ export function ProjectsPage() {
                       </div>
 
                       <p className="project-card-desc">
-                        {p.summary || (p.description?.replace(/<[^>]*>?/gm, '').slice(0, 140) + '…')}
+                        {extractCleanSummary(p.description, p.summary)}
                       </p>
 
                       {techs.length > 0 && (

@@ -8,6 +8,24 @@ import { useApiResource } from '../hooks/useApiResource'
 import { getProfile, getProjects, getSkills } from '../services/portfolioApi'
 import { FrontendProfileEditor } from '../admin/FrontendProfileEditor'
 
+function getCleanProjectSummary(p) {
+  if (p?.summary && p.summary.trim()) {
+    return p.summary.trim()
+  }
+  const cleanHtml = (p?.description || '')
+    .replace(/<pre[\s\S]*?<\/pre>/gi, '')
+    .replace(/<code[\s\S]*?<\/code>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]*>?/gm, ' ')
+    .replace(/graph\s+(TD|TB|BT|RL|LR)[\s\S]*?(?=\n\n|\r\n\r\n|$)/gi, '')
+    .replace(/flowchart\s+(TD|TB|BT|RL|LR)[\s\S]*?(?=\n\n|\r\n\r\n|$)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!cleanHtml) return 'Xem thông tin chi tiết kiến trúc và giải pháp kỹ thuật của dự án.'
+  return cleanHtml.slice(0, 140) + (cleanHtml.length > 140 ? '…' : '')
+}
+
 export function HomePage() {
   const profileState = useApiResource(getProfile)
   const projectsState = useApiResource(getProjects)
@@ -55,7 +73,7 @@ export function HomePage() {
                     <div className="card-body">
                       <small>{p.technologies}</small>
                       <h3>{p.title}</h3>
-                      <p>{p.summary || (p.description?.replace(/<[^>]*>?/gm, '').slice(0, 140) + '…')}</p>
+                      <p>{getCleanProjectSummary(p)}</p>
                       <Link to={`/projects/${p.id}`}>Xem chi tiết <ArrowRight /></Link>
                     </div>
                   </TiltCard>
