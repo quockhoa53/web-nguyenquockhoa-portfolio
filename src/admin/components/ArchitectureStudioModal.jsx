@@ -447,19 +447,27 @@ export function ArchitectureStudioModal({
   const selectedEdge = graph.edges.find(e => e.id === selectedEdgeId)
 
   return (
-    <div className="arch-studio-backdrop">
-      <div className="arch-studio-modal visual-mode-modal">
-        {/* Top Header Bar */}
-        <div className="arch-studio-header">
-          <div className="arch-studio-title-wrap">
-            <div className="arch-studio-icon">
-              <Workflow size={20} />
-            </div>
-            <div>
-              <h3>Visual Architecture Studio IDE</h3>
-              <p>Trực tiếp vẽ, nối mũi tên và tự động sinh code Mermaid kiến trúc hệ thống.</p>
-            </div>
+    <div className="arch-studio-fullscreen-page">
+      {/* Full-bleed Top Navigation Header */}
+      <div className="arch-studio-header">
+        <div className="arch-studio-title-wrap">
+          <button
+            type="button"
+            className="btn-back-to-project"
+            onClick={onClose}
+            title="Quay lại trình soạn thảo dự án"
+          >
+            <ArrowRight style={{ transform: 'rotate(180deg)' }} size={16} />
+            <span>Quay lại Dự Án</span>
+          </button>
+          <div className="arch-studio-icon">
+            <Workflow size={20} />
           </div>
+          <div>
+            <h3>Visual Architecture Studio IDE</h3>
+            <p>Trực tiếp vẽ, nối mũi tên và tự động sinh code Mermaid cho dự án.</p>
+          </div>
+        </div>
 
           <div className="arch-studio-header-actions">
             {/* Template Selector Dropdown Button */}
@@ -859,7 +867,6 @@ export function ArchitectureStudioModal({
             </div>
           )}
         </div>
-      </div>
     </div>
   )
 }

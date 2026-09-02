@@ -49,7 +49,6 @@ const NAV_SECTIONS = [
   {
     group: 'DỰ ÁN & BÀI VIẾT',
     items: [
-      ['architecture', 'Architecture Studio', Workflow],
       ['projects', 'Dự án tiêu biểu', FolderKanban],
       ['categories', 'Danh mục kiến thức', BookOpen],
       ['articles', 'Bài viết kiến thức', FileText],
