@@ -1,4 +1,5 @@
 import {
+  Activity,
   ArrowDownUp,
   ArrowRight,
   BookOpen,
@@ -15,6 +16,7 @@ import {
   Link2,
   Palette,
   Plus,
+  Radio,
   RefreshCw,
   RotateCcw,
   Search,
@@ -43,6 +45,19 @@ export const COMPONENT_PALETTE = [
   { type: 'redis', label: 'Redis Cache Cluster', icon: Cpu, defaultColor: '#f43f5e' },
   { type: 'search', label: 'Elasticsearch / Index', icon: Search, defaultColor: '#8b5cf6' },
   { type: 'storage', label: 'S3 / Cloud Storage', icon: Cloud, defaultColor: '#06b6d4' }
+]
+
+// Preset Color Swatches for Custom Node Color
+export const COLOR_SWATCHES = [
+  { label: 'Sky Blue', color: '#0284c7' },
+  { label: 'Indigo', color: '#6366f1' },
+  { label: 'Emerald', color: '#10b981' },
+  { label: 'Amber', color: '#f59e0b' },
+  { label: 'Rose Red', color: '#f43f5e' },
+  { label: 'Purple', color: '#8b5cf6' },
+  { label: 'Pink', color: '#ec4899' },
+  { label: 'Teal', color: '#06b6d4' },
+  { label: 'Dark Slate', color: '#334155' }
 ]
 
 // 5 Pre-defined Architecture Templates in Visual Graph Format
@@ -229,6 +244,14 @@ export function generateMermaidFromGraph(graph) {
     }
   })
 
+  // Apply Custom Node Colors if chosen by user
+  nodes.forEach(n => {
+    const safeId = (n.id || 'node').replace(/[^a-zA-Z0-9_]/g, '_')
+    if (n.customColor) {
+      lines.push(`    style ${safeId} fill:${n.customColor},stroke:#0284c7,stroke-width:2.5px,color:#ffffff,font-weight:bold;`)
+    }
+  })
+
   return lines.join('\n')
 }
 
@@ -260,6 +283,7 @@ export function ArchitectureStudioModal({
   const [description, setDescription] = useState('')
   const [templatesDropdownOpen, setTemplatesDropdownOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [animatedFlow, setAnimatedFlow] = useState(true)
 
   // Visual Graph State
   const [graph, setGraph] = useState(() => ({
@@ -269,10 +293,13 @@ export function ArchitectureStudioModal({
   }))
 
   // Selected Elements for Interaction
-  const [selectedNodeId, setSelectedNodeId] = useState(null)
+  const [selectedNodeId, setSelectedNodeId] = useState(() => ARCHITECTURE_PRESETS[0].nodes[0]?.id || null)
   const [selectedEdgeId, setSelectedEdgeId] = useState(null)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [connectFromNodeId, setConnectFromNodeId] = useState(null)
+
+  // Form State for Adding New Connection from Selected Node
+  const [newTargetNodeId, setNewTargetNodeId] = useState('')
+  const [newEdgeLabel, setNewEdgeLabel] = useState('')
+  const [newEdgeStyle, setNewEdgeStyle] = useState('solid')
 
   // Raw Code State (Synced with Graph or custom edited)
   const [rawCode, setRawCode] = useState(() => generateMermaidFromGraph(ARCHITECTURE_PRESETS[0]))
@@ -298,9 +325,8 @@ export function ArchitectureStudioModal({
     })
     setIsRawCodeDirty(false)
     setTemplatesDropdownOpen(false)
-    setSelectedNodeId(null)
+    setSelectedNodeId(preset.nodes[0]?.id || null)
     setSelectedEdgeId(null)
-    setIsConnecting(false)
   }
 
   // Clear Canvas
@@ -323,7 +349,8 @@ export function ArchitectureStudioModal({
     const newNode = {
       id: newId,
       type: paletteItem.type,
-      label: paletteItem.label
+      label: paletteItem.label,
+      customColor: ''
     }
 
     setGraph(prev => ({
@@ -331,35 +358,14 @@ export function ArchitectureStudioModal({
       nodes: [...prev.nodes, newNode]
     }))
     setSelectedNodeId(newId)
+    setSelectedEdgeId(null)
     setIsRawCodeDirty(false)
   }
 
-  // Node Click handler
-  function handleNodeClick(nodeId) {
-    if (isConnecting) {
-      if (connectFromNodeId && connectFromNodeId !== nodeId) {
-        // Create edge
-        const newEdge = {
-          id: `edge_${Date.now().toString(36).slice(-4)}`,
-          from: connectFromNodeId,
-          to: nodeId,
-          label: 'Data Flow'
-        }
-        setGraph(prev => ({
-          ...prev,
-          edges: [...prev.edges, newEdge]
-        }))
-        setIsConnecting(false)
-        setConnectFromNodeId(null)
-        setSelectedEdgeId(newEdge.id)
-        setIsRawCodeDirty(false)
-      } else {
-        setConnectFromNodeId(nodeId)
-      }
-    } else {
-      setSelectedNodeId(nodeId)
-      setSelectedEdgeId(null)
-    }
+  // Select Node
+  function handleSelectNode(nodeId) {
+    setSelectedNodeId(nodeId)
+    setSelectedEdgeId(null)
   }
 
   // Update selected Node Label
@@ -380,6 +386,15 @@ export function ArchitectureStudioModal({
     setIsRawCodeDirty(false)
   }
 
+  // Update selected Node Custom Color
+  function handleUpdateNodeColor(color) {
+    setGraph(prev => ({
+      ...prev,
+      nodes: prev.nodes.map(n => n.id === selectedNodeId ? { ...n, customColor: color } : n)
+    }))
+    setIsRawCodeDirty(false)
+  }
+
   // Delete Selected Node
   function handleDeleteNode(nodeId) {
     setGraph(prev => ({
@@ -387,34 +402,52 @@ export function ArchitectureStudioModal({
       nodes: prev.nodes.filter(n => n.id !== nodeId),
       edges: prev.edges.filter(e => e.from !== nodeId && e.to !== nodeId)
     }))
-    setSelectedNodeId(null)
+    if (selectedNodeId === nodeId) {
+      setSelectedNodeId(null)
+    }
     setIsRawCodeDirty(false)
   }
 
-  // Delete Selected Edge
+  // Add Edge from Selected Node via Dropdown Form
+  function handleAddEdgeFromSelectedNode() {
+    if (!selectedNodeId || !newTargetNodeId) return
+
+    const newEdge = {
+      id: `edge_${Date.now().toString(36).slice(-4)}`,
+      from: selectedNodeId,
+      to: newTargetNodeId,
+      label: newEdgeLabel.trim() || 'Data Flow',
+      style: newEdgeStyle
+    }
+
+    setGraph(prev => ({
+      ...prev,
+      edges: [...prev.edges, newEdge]
+    }))
+
+    // Reset Form
+    setNewTargetNodeId('')
+    setNewEdgeLabel('')
+    setIsRawCodeDirty(false)
+  }
+
+  // Delete Edge
   function handleDeleteEdge(edgeId) {
     setGraph(prev => ({
       ...prev,
       edges: prev.edges.filter(e => e.id !== edgeId)
     }))
-    setSelectedEdgeId(null)
+    if (selectedEdgeId === edgeId) {
+      setSelectedEdgeId(null)
+    }
     setIsRawCodeDirty(false)
   }
 
-  // Update Selected Edge Label
-  function handleUpdateEdgeLabel(newLabel) {
+  // Update Existing Edge Label
+  function handleUpdateEdgeLabel(edgeId, newLabel) {
     setGraph(prev => ({
       ...prev,
-      edges: prev.edges.map(e => e.id === selectedEdgeId ? { ...e, label: newLabel } : e)
-    }))
-    setIsRawCodeDirty(false)
-  }
-
-  // Update Selected Edge Style
-  function handleUpdateEdgeStyle(style) {
-    setGraph(prev => ({
-      ...prev,
-      edges: prev.edges.map(e => e.id === selectedEdgeId ? { ...e, style } : e)
+      edges: prev.edges.map(e => e.id === edgeId ? { ...e, label: newLabel } : e)
     }))
     setIsRawCodeDirty(false)
   }
@@ -448,7 +481,8 @@ export function ArchitectureStudioModal({
   }
 
   const selectedNode = graph.nodes.find(n => n.id === selectedNodeId)
-  const selectedEdge = graph.edges.find(e => e.id === selectedEdgeId)
+  const outgoingEdges = selectedNode ? graph.edges.filter(e => e.from === selectedNode.id) : []
+  const otherNodes = selectedNode ? graph.nodes.filter(n => n.id !== selectedNode.id) : []
 
   return (
     <div className="arch-studio-fullscreen-page">
@@ -474,6 +508,17 @@ export function ArchitectureStudioModal({
         </div>
 
         <div className="arch-studio-header-actions">
+          {/* Animated Data Flow Toggle Button */}
+          <button
+            type="button"
+            className={`btn-animated-flow-toggle ${animatedFlow ? 'active' : ''}`}
+            onClick={() => setAnimatedFlow(prev => !prev)}
+            title="Bật/Tắt hiệu ứng dòng điện/hạt dữ liệu chạy trên đường mũi tên"
+          >
+            <Activity size={14} className={animatedFlow ? 'pulse-icon' : ''} />
+            <span>{animatedFlow ? '⚡ Luồng Dữ Liệu: BẬT' : 'Luồng Dữ Liệu: TẮT'}</span>
+          </button>
+
           {/* Template Selector Dropdown Button */}
           <div className="arch-template-dropdown-wrap">
             <button
@@ -625,27 +670,29 @@ export function ArchitectureStudioModal({
                 })}
               </div>
 
-              {/* Arrow Connector Tool Trigger */}
-              <div className="palette-connector-box">
+              {/* Quick Component Selection List */}
+              <div className="palette-nodes-list-section">
                 <span className="palette-title">
-                  <Link2 size={14} /> Nối Mũi Tên (Connect)
+                  <Workflow size={14} /> Chọn Khối Để Nối / Sửa ({graph.nodes.length})
                 </span>
-                <button
-                  type="button"
-                  className={`btn-connect-tool ${isConnecting ? 'active' : ''}`}
-                  onClick={() => {
-                    setIsConnecting(prev => !prev)
-                    setConnectFromNodeId(null)
-                  }}
-                >
-                  <ArrowRight size={15} />
-                  <span>{isConnecting ? 'Đang chọn 2 node...' : 'Bật chế độ nối dây'}</span>
-                </button>
-                {isConnecting && (
-                  <small className="connect-guide-tip">
-                    👉 Hãy bấm vào <b>Node gốc (From)</b> ở danh sách bên phải rồi bấm tiếp vào <b>Node đích (To)</b>!
-                  </small>
-                )}
+                <div className="palette-nodes-scroll">
+                  {graph.nodes.map(node => {
+                    const isSelected = selectedNodeId === node.id
+                    return (
+                      <div
+                        key={node.id}
+                        className={`palette-node-item ${isSelected ? 'selected' : ''}`}
+                        onClick={() => handleSelectNode(node.id)}
+                      >
+                        <span className="node-item-icon">{getNodeIconSymbol(node.type)}</span>
+                        <span className="node-item-label">{node.label}</span>
+                        {node.customColor && (
+                          <span className="node-color-dot" style={{ background: node.customColor }} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
 
@@ -653,14 +700,18 @@ export function ArchitectureStudioModal({
             <div className="visual-canvas-workspace">
               <div className="canvas-header-strip">
                 <span>
-                  ⚡ Có <b>{graph.nodes.length}</b> khối thành phần &amp; <b>{graph.edges.length}</b> liên kết mũi tên.
+                  ⚡ Có <b>{graph.nodes.length}</b> khối &amp; <b>{graph.edges.length}</b> liên kết mũi tên.
                 </span>
                 <span className="selected-tag">
-                  🔍 Kéo chuột để di chuyển • Cuộn chuột để zoom • Tự động render 100%
+                  {selectedNode ? (
+                    <>Đang chọn: <b>{selectedNode.label}</b> (Bấm đổi màu &amp; nối dây ở cột phải ➔)</>
+                  ) : (
+                    '🔍 Kéo chuột để di chuyển • Cuộn chuột để zoom'
+                  )}
                 </span>
               </div>
 
-              <div className="visual-live-diagram-fullscreen">
+              <div className={`visual-live-diagram-fullscreen ${animatedFlow ? 'animated-flow' : ''}`}>
                 <ArchitectureViewer
                   diagramCode={rawCode}
                   title={title}
@@ -672,16 +723,20 @@ export function ArchitectureStudioModal({
               </div>
             </div>
 
-            {/* Right Sidebar: Active Node / Edge Inspector & Elements Manager */}
+            {/* Right Sidebar: Active Node / Edge Inspector & Dropdown Connect Form */}
             <div className="visual-inspector-sidebar">
               <span className="inspector-title">
-                <Palette size={14} /> Khối &amp; Thuộc Tính
+                <Palette size={14} /> Thuộc Tính Khối &amp; Nối Mũi Tên
               </span>
 
-              {/* Selection Inspector */}
               {selectedNode ? (
                 <div className="inspector-form selected-box">
-                  <span className="inspector-subhead">Đang chọn khối:</span>
+                  <div className="inspector-header-badge">
+                    <span className="node-badge-icon">{getNodeIconSymbol(selectedNode.type)}</span>
+                    <b>{selectedNode.label}</b>
+                  </div>
+
+                  {/* 1. Edit Name & Type */}
                   <label>
                     <span>Tên hiển thị khối:</span>
                     <input
@@ -704,81 +759,148 @@ export function ArchitectureStudioModal({
                     </select>
                   </label>
 
+                  {/* 2. Custom Color Picker */}
+                  <div className="inspector-color-section">
+                    <span className="inspector-subhead">🎨 Màu Sắc Khối:</span>
+                    <div className="color-swatches-grid">
+                      {COLOR_SWATCHES.map(s => (
+                        <button
+                          key={s.color}
+                          type="button"
+                          className={`color-swatch-btn ${selectedNode.customColor === s.color ? 'active' : ''}`}
+                          style={{ background: s.color }}
+                          onClick={() => handleUpdateNodeColor(s.color)}
+                          title={s.label}
+                        />
+                      ))}
+                      <label className="color-picker-custom-label" title="Chọn màu tùy biến">
+                        <input
+                          type="color"
+                          value={selectedNode.customColor || '#0284c7'}
+                          onChange={e => handleUpdateNodeColor(e.target.value)}
+                        />
+                        <span>Tự chọn</span>
+                      </label>
+                    </div>
+                    {selectedNode.customColor && (
+                      <button
+                        type="button"
+                        className="btn-reset-color"
+                        onClick={() => handleUpdateNodeColor('')}
+                      >
+                        <RotateCcw size={11} /> Đặt lại màu mặc định
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 3. Outgoing Connections List & Dropdown Form */}
+                  <div className="inspector-connections-section">
+                    <span className="inspector-subhead">
+                      <Link2 size={13} /> Các Mũi Tên Đang Nối Từ Khối Này ({outgoingEdges.length}):
+                    </span>
+
+                    {outgoingEdges.length > 0 ? (
+                      <div className="outgoing-edges-list">
+                        {outgoingEdges.map(edge => {
+                          const targetNode = graph.nodes.find(n => n.id === edge.to)
+                          return (
+                            <div key={edge.id} className="outgoing-edge-card">
+                              <div className="edge-card-info">
+                                <span className="edge-arrow-symbol">➔</span>
+                                <b className="edge-target-name">{targetNode?.label || edge.to}</b>
+                              </div>
+                              <div className="edge-label-edit-row">
+                                <input
+                                  type="text"
+                                  className="edge-label-input"
+                                  value={edge.label || ''}
+                                  onChange={e => handleUpdateEdgeLabel(edge.id, e.target.value)}
+                                  placeholder="Nhãn luồng (vd: HTTP / REST)..."
+                                />
+                                <button
+                                  type="button"
+                                  className="edge-del-btn"
+                                  onClick={() => handleDeleteEdge(edge.id)}
+                                  title="Xóa liên kết này"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="empty-connections-hint">Chưa có mũi tên nào nối từ khối này.</p>
+                    )}
+
+                    {/* Add New Connection Form */}
+                    <div className="add-connection-box">
+                      <span className="add-conn-title">➕ Thêm Mũi Tên Mới Từ Khối Này:</span>
+
+                      <label>
+                        <span>Nối tới khối đích (To Node):</span>
+                        <select
+                          value={newTargetNodeId}
+                          onChange={e => setNewTargetNodeId(e.target.value)}
+                        >
+                          <option value="">-- Chọn khối muốn nối tới --</option>
+                          {otherNodes.map(target => (
+                            <option key={target.id} value={target.id}>
+                              {getNodeIconSymbol(target.type)} {target.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Mô tả luồng dữ liệu (Label):</span>
+                        <input
+                          type="text"
+                          value={newEdgeLabel}
+                          onChange={e => setNewEdgeLabel(e.target.value)}
+                          placeholder="vd: HTTP / REST, SQL Query, Event..."
+                        />
+                      </label>
+
+                      <label>
+                        <span>Kiểu đường mũi tên:</span>
+                        <select
+                          value={newEdgeStyle}
+                          onChange={e => setNewEdgeStyle(e.target.value)}
+                        >
+                          <option value="solid">Mũi tên liền (Solid ---&gt;)</option>
+                          <option value="dotted">Mũi tên nét đứt (Dotted -.-&gt;)</option>
+                          <option value="bidirectional">Hai chiều (&lt;---&gt;)</option>
+                        </select>
+                      </label>
+
+                      <button
+                        type="button"
+                        className="btn-add-edge-action"
+                        onClick={handleAddEdgeFromSelectedNode}
+                        disabled={!newTargetNodeId}
+                      >
+                        <Plus size={14} /> Nối Mũi Tên Ngay
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4. Delete Node Button */}
                   <button
                     type="button"
                     className="btn-danger-del"
                     onClick={() => handleDeleteNode(selectedNode.id)}
                   >
-                    <Trash2 size={14} /> Xóa khối này
+                    <Trash2 size={14} /> Xóa khối này khỏi sơ đồ
                   </button>
                 </div>
-              ) : selectedEdge ? (
-                <div className="inspector-form selected-box">
-                  <span className="inspector-subhead">Đang chọn mũi tên:</span>
-                  <label>
-                    <span>Nhãn luồng dữ liệu (Arrow Label):</span>
-                    <input
-                      type="text"
-                      value={selectedEdge.label || ''}
-                      onChange={e => handleUpdateEdgeLabel(e.target.value)}
-                      placeholder="vd: Publish OrderCreated, SQL Query..."
-                    />
-                  </label>
-
-                  <label>
-                    <span>Kiểu mũi tên:</span>
-                    <select
-                      value={selectedEdge.style || 'solid'}
-                      onChange={e => handleUpdateEdgeStyle(e.target.value)}
-                    >
-                      <option value="solid">Mũi tên liền (Solid ---&gt;)</option>
-                      <option value="dotted">Mũi tên nét đứt (Dotted -.-&gt;)</option>
-                      <option value="bidirectional">Hai chiều (&lt;---&gt;)</option>
-                    </select>
-                  </label>
-
-                  <button
-                    type="button"
-                    className="btn-danger-del"
-                    onClick={() => handleDeleteEdge(selectedEdge.id)}
-                  >
-                    <Trash2 size={14} /> Xóa mũi tên này
-                  </button>
+              ) : (
+                <div className="inspector-placeholder">
+                  <Workflow size={36} style={{ color: '#0284c7', margin: '0 auto 10px', opacity: 0.7 }} />
+                  <p>Hãy chọn một khối ở cột bên trái hoặc trên sơ đồ để đổi màu và nối mũi tên!</p>
                 </div>
-              ) : null}
-
-              {/* Quick Nodes List for Connect & Edit */}
-              <div className="inspector-nodes-list-section">
-                <span className="inspector-subhead">Danh sách các khối hiện tại ({graph.nodes.length}):</span>
-                <div className="inspector-nodes-scroll">
-                  {graph.nodes.map(node => {
-                    const isSelected = selectedNodeId === node.id
-                    const isSourceConnect = connectFromNodeId === node.id
-
-                    return (
-                      <div
-                        key={node.id}
-                        className={`inspector-node-item ${isSelected ? 'selected' : ''} ${isSourceConnect ? 'connecting-source' : ''}`}
-                        onClick={() => handleNodeClick(node.id)}
-                      >
-                        <span className="node-item-icon">{getNodeIconSymbol(node.type)}</span>
-                        <span className="node-item-label">{node.label}</span>
-                        <button
-                          type="button"
-                          className="node-item-del"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteNode(node.id)
-                          }}
-                          title="Xóa khối"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
