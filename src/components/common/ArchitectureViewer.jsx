@@ -14,8 +14,6 @@ import {
 import mermaid from 'mermaid'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
-let mermaidInitialized = false
-
 function initMermaid(isDark = false) {
   mermaid.initialize({
     startOnLoad: false,
@@ -34,8 +32,8 @@ function initMermaid(isDark = false) {
           textColor: '#e2e8f0',
           mainBkg: '#0f172a',
           nodeBorder: '#818cf8',
-          clusterBkg: 'rgba(15, 23, 42, 0.65)',
-          clusterBorder: 'rgba(255, 255, 255, 0.15)',
+          clusterBkg: 'rgba(15, 23, 42, 0.75)',
+          clusterBorder: 'rgba(255, 255, 255, 0.18)',
           titleColor: '#38bdf8',
           edgeLabelBackground: '#0f172a'
         }
@@ -62,7 +60,6 @@ function initMermaid(isDark = false) {
       curve: 'basis'
     }
   })
-  mermaidInitialized = true
 }
 
 export function ArchitectureViewer({
@@ -70,11 +67,11 @@ export function ArchitectureViewer({
   title = 'Sơ đồ Kiến trúc Hệ thống',
   description = '',
   allowFullscreen = true,
-  defaultHeight = '460px',
+  defaultHeight = '520px',
   className = ''
 }) {
   const containerRef = useRef(null)
-  const svgWrapperRef = useRef(null)
+  const canvasRef = useRef(null)
   const rawId = useId().replace(/:/g, '')
   const diagramId = `mermaid-arch-${rawId}`
 
@@ -104,6 +101,28 @@ export function ArchitectureViewer({
     return () => observer.disconnect()
   }, [])
 
+  // Auto-fit diagram inside viewport
+  const autoFitDiagram = useCallback(() => {
+    if (!canvasRef.current) return
+    const container = canvasRef.current
+    const svgEl = container.querySelector('svg')
+    if (!svgEl) return
+
+    const cWidth = container.clientWidth - 40
+    const cHeight = container.clientHeight - 40
+    const svgBBox = svgEl.getBBox ? svgEl.getBBox() : { width: 800, height: 500 }
+    const sWidth = svgBBox.width || 800
+    const sHeight = svgBBox.height || 500
+
+    if (sWidth > 0 && sHeight > 0 && cWidth > 0 && cHeight > 0) {
+      const scaleX = cWidth / sWidth
+      const scaleY = cHeight / sHeight
+      const fitScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.5), 1.1)
+      setScale(fitScale)
+      setPosition({ x: 0, y: 0 })
+    }
+  }, [])
+
   // Render Mermaid Diagram
   const renderDiagram = useCallback(async () => {
     const cleanCode = (diagramCode || '').trim()
@@ -119,47 +138,71 @@ export function ArchitectureViewer({
       const renderId = `${diagramId}-${Date.now()}`
       const { svg } = await mermaid.render(renderId, cleanCode)
       setSvgHtml(svg)
+      setTimeout(autoFitDiagram, 100)
     } catch (err) {
       console.warn('Mermaid rendering error:', err)
       setError(err?.message || 'Cú pháp sơ đồ Mermaid chưa hợp lệ.')
     }
-  }, [diagramCode, isDarkTheme, diagramId])
+  }, [diagramCode, isDarkTheme, diagramId, autoFitDiagram])
 
   useEffect(() => {
     renderDiagram()
   }, [renderDiagram])
 
-  // Mouse drag / Pan handlers
+  // Global mouse listeners for seamless unconstrained dragging
+  useEffect(() => {
+    function handleGlobalMouseMove(e) {
+      if (!isDragging) return
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      })
+    }
+
+    function handleGlobalMouseUp() {
+      if (isDragging) {
+        setIsDragging(false)
+      }
+    }
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleGlobalMouseMove)
+      window.addEventListener('mouseup', handleGlobalMouseUp)
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove)
+      window.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [isDragging, dragStart])
+
+  // Mouse Down handler
   function handleMouseDown(e) {
-    if (showSource) return
+    if (showSource || error) return
+    // Only drag on left click
+    if (e.button !== 0) return
     setIsDragging(true)
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
   }
 
-  function handleMouseMove(e) {
-    if (!isDragging) return
-    setPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
-    })
-  }
-
-  function handleMouseUp() {
-    setIsDragging(false)
+  // Wheel zoom handler
+  function handleWheel(e) {
+    if (showSource || error) return
+    e.preventDefault()
+    const zoomFactor = e.deltaY < 0 ? 0.12 : -0.12
+    setScale(prev => Math.min(Math.max(prev + zoomFactor, 0.25), 3.5))
   }
 
   // Zoom helpers
   function zoomIn() {
-    setScale(prev => Math.min(prev + 0.2, 3))
+    setScale(prev => Math.min(prev + 0.2, 3.5))
   }
 
   function zoomOut() {
-    setScale(prev => Math.max(prev - 0.2, 0.4))
+    setScale(prev => Math.max(prev - 0.2, 0.25))
   }
 
   function resetView() {
-    setScale(1)
-    setPosition({ x: 0, y: 0 })
+    autoFitDiagram()
   }
 
   // Download SVG
@@ -236,7 +279,7 @@ export function ArchitectureViewer({
                 type="button"
                 className="arch-btn icon-only"
                 onClick={resetView}
-                title="Đặt lại góc nhìn (100%)"
+                title="Tự động căn vừa khung nhìn (Fit to screen)"
               >
                 <RefreshCw size={14} />
               </button>
@@ -249,7 +292,7 @@ export function ArchitectureViewer({
             className="arch-btn icon-only"
             onClick={downloadSvg}
             disabled={!svgHtml || Boolean(error)}
-            title="Tải về file SVG"
+            title="Tải về file SVG chất lượng cao"
           >
             <Download size={15} />
           </button>
@@ -269,12 +312,11 @@ export function ArchitectureViewer({
 
       {/* Main Canvas Body */}
       <div
+        ref={canvasRef}
         className="arch-canvas-body"
-        style={{ height: isFullscreen ? 'calc(100vh - 120px)' : defaultHeight }}
+        style={{ height: isFullscreen ? 'calc(100vh - 100px)' : defaultHeight }}
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
       >
         {error ? (
           <div className="arch-error-box">
@@ -296,7 +338,6 @@ export function ArchitectureViewer({
           </div>
         ) : (
           <div
-            ref={svgWrapperRef}
             className={`arch-svg-viewport ${isDragging ? 'is-dragging' : ''}`}
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
@@ -310,7 +351,7 @@ export function ArchitectureViewer({
         {!showSource && !error && (
           <div className="arch-zoom-indicator">
             <Move size={12} />
-            <span>Kéo để di chuyển • {Math.round(scale * 100)}%</span>
+            <span>Kéo chuột để di chuyển • Cuộn chuột để zoom • {Math.round(scale * 100)}%</span>
           </div>
         )}
       </div>

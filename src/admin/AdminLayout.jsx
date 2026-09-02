@@ -20,7 +20,8 @@ import {
   Globe,
   Sun,
   Moon,
-  Settings
+  Settings,
+  Workflow
 } from 'lucide-react'
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { adminLogout, adminMe } from '../services/adminApi'
@@ -48,6 +49,7 @@ const NAV_SECTIONS = [
   {
     group: 'DỰ ÁN & BÀI VIẾT',
     items: [
+      ['architecture', 'Architecture Studio', Workflow],
       ['projects', 'Dự án tiêu biểu', FolderKanban],
       ['categories', 'Danh mục kiến thức', BookOpen],
       ['articles', 'Bài viết kiến thức', FileText],
