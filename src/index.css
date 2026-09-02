@@ -2221,22 +2221,65 @@ button {
 .prose-card-wide ul,
 .prose-content-body ul,
 .chat-markdown-renderer ul {
-  list-style: disc !important;
   list-style-type: disc !important;
   list-style-position: outside !important;
-  padding-left: 28px !important;
+  padding-left: 22px !important;
   margin: 12px 0 16px !important;
+}
+
+.rich-content ul li,
+.prose-card-wide ul li,
+.prose-content-body ul li,
+.chat-markdown-renderer ul li {
+  margin-bottom: 8px !important;
+  line-height: 1.7 !important;
+  color: #334155;
+  padding-left: 4px !important;
+}
+
+.dark .rich-content ul li,
+.dark .prose-card-wide ul li,
+.dark .prose-content-body ul li,
+.dark .chat-markdown-renderer ul li {
+  color: #cbd5e1;
+}
+
+.rich-content table td ul,
+.prose-content-body table td ul {
+  margin: 4px 0 !important;
+  padding-left: 18px !important;
+}
+
+.rich-content table td ul li,
+.prose-content-body table td ul li {
+  margin-bottom: 4px !important;
 }
 
 .rich-content ol,
 .prose-card-wide ol,
 .prose-content-body ol,
 .chat-markdown-renderer ol {
-  list-style: decimal !important;
   list-style-type: decimal !important;
   list-style-position: outside !important;
-  padding-left: 28px !important;
+  padding-left: 22px !important;
   margin: 12px 0 16px !important;
+}
+
+.rich-content ol li,
+.prose-card-wide ol li,
+.prose-content-body ol li,
+.chat-markdown-renderer ol li {
+  margin-bottom: 8px !important;
+  line-height: 1.7 !important;
+  color: #334155;
+  padding-left: 4px !important;
+}
+
+.dark .rich-content ol li,
+.dark .prose-card-wide ol li,
+.dark .prose-content-body ol li,
+.dark .chat-markdown-renderer ol li {
+  color: #cbd5e1;
 }
 
 .rich-content ul ul,
@@ -5916,64 +5959,7 @@ button {
   color: #c084fc;
 }
 
-.rich-content ul,
-.prose-content-body ul {
-  list-style: none;
-  padding-left: 8px;
-  margin: 18px 0;
-}
 
-.rich-content ul li,
-.prose-content-body ul li {
-  position: relative;
-  padding-left: 24px;
-  margin-bottom: 10px;
-  font-size: 15px;
-  color: #334155;
-  line-height: 1.7;
-}
-
-.dark .rich-content ul li,
-.dark .prose-content-body ul li {
-  color: #cbd5e1;
-}
-
-.rich-content ul li::before,
-.prose-content-body ul li::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 10px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #0284c7;
-}
-
-.dark .rich-content ul li::before,
-.dark .prose-content-body ul li::before {
-  background: #38bdf8;
-  box-shadow: 0 0 8px #38bdf8;
-}
-
-.rich-content ol,
-.prose-content-body ol {
-  padding-left: 24px;
-  margin: 18px 0;
-}
-
-.rich-content ol li,
-.prose-content-body ol li {
-  margin-bottom: 10px;
-  font-size: 15px;
-  color: #334155;
-  line-height: 1.7;
-}
-
-.dark .rich-content ol li,
-.dark .prose-content-body ol li {
-  color: #cbd5e1;
-}
 
 .rich-content img,
 .prose-content-body img {
